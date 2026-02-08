@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.NextcloudTV" parent="@style/Theme.Leanback" />
+</resources>
