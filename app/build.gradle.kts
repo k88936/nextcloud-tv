@@ -1,10 +1,12 @@
+import com.android.build.api.dsl.ApplicationExtension
+
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
-android {
+extensions.configure<ApplicationExtension> {
     namespace = "top.k88936.nextcloud_tv"
     compileSdk = 36
 
@@ -37,10 +39,15 @@ android {
         resources {
             excludes += setOf(
                 "/META-INF/{AL2.0,LGPL2.1}",
-                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "META-INF/INDEX.LIST"
             )
         }
     }
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }
 
 dependencies {
@@ -53,6 +60,16 @@ dependencies {
         exclude(group = "org.ogce", module = "xpp3") // unused in Android and brings wrong Junit version
     }
     
+    // Ktor client dependencies
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.json)
+    implementation(libs.kotlinx.serialization.json)
+
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+
     // Image loading
     implementation(libs.coil.compose)
     
@@ -75,4 +92,13 @@ dependencies {
     // Debug dependencies
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
+
+    // Test dependencies
+    testImplementation(libs.kotlintest.runner.junit5)
+
+    // Logging
+    implementation(libs.logback.classic)
+
+    // QR Code generation
+    implementation(libs.zxing.core)
 }
