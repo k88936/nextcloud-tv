@@ -17,6 +17,7 @@ kotlinx-coroutines = "1.10.2"
 kotlintest = "3.4.2"
 logback = "1.5.12"
 zxing = "3.5.3"
+slf4j = "2.0.16"
 
 
 [libraries]
@@ -51,6 +52,7 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlintest-runner-junit5 = { module = "io.kotlintest:kotlintest-runner-junit5", version.ref = "kotlintest" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
+slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

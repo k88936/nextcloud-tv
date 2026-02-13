@@ -96,9 +96,9 @@ dependencies {
     // Test dependencies
     testImplementation(libs.kotlintest.runner.junit5)
 
-    // Logging
-    implementation(libs.logback.classic)
-
     // QR Code generation
     implementation(libs.zxing.core)
+
+    // No-op SLF4J for Ktor (required for Android compatibility)
+    implementation(libs.slf4j.nop)
 }
