@@ -3,10 +3,9 @@ package top.k88936.nextcloud_tv.ui.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Files
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Photos
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Settings2
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(
@@ -43,7 +42,7 @@ object Screens {
     data object Settings : Screen(
         route = "settings",
         title = "Settings",
-        icon = Icons.Filled.Settings
+        icon = Icons.Filled.Settings2
     )
 
     val items = listOf(Files, Photos, Music, Settings)

@@ -5,7 +5,7 @@ import androidx.compose.material.icons.materialPath
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
-val Icons.Filled.Settings: ImageVector
+val Icons.Filled.Settings2: ImageVector
     get() {
         if (_Setting != null) {
             return _Setting!!
