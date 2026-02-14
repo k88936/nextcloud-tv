@@ -1,5 +1,6 @@
 package top.k88936.nextcloud_tv.ui.auth
 
+import android.R.attr.singleLine
 import android.app.Activity
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
@@ -19,7 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,11 +47,24 @@ import androidx.tv.material3.Surface
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import top.k88936.nextcloud_tv.data.repository.AuthRepository
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun AuthScreen() {
+fun AuthScreen(
+    onAuthSuccess: () -> Unit = {},
+    viewModel: AuthViewModel = koinViewModel()
+) {
     val context = LocalContext.current
     val activity = context as? Activity
+    val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(state.authResult) {
+        if (state.authResult != null) {
+            onAuthSuccess()
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -57,9 +74,6 @@ fun AuthScreen() {
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth(0.6f)
         ) {
-            val viewModel: AuthViewModel = viewModel()
-            val state by viewModel.state.collectAsState()
-
             BackHandler(enabled = state.step == AuthStep.QR_CODE) {
                 viewModel.goBack()
             }
@@ -82,7 +96,6 @@ fun AuthScreen() {
                         loginUrl = state.loginUrl,
                         isLoading = state.isLoading,
                         error = state.error,
-                        authResult = state.authResult,
                         onPoll = { viewModel.pollOnce() },
                         onCancel = { viewModel.goBack() }
                     )
@@ -113,6 +126,7 @@ private fun ServerInputStep(
     ) {
         Text(
             text = "Enter your Nextcloud server URL",
+            color = MaterialTheme.colorScheme.inverseSurface,
             style = MaterialTheme.typography.headlineMedium,
         )
 
@@ -121,7 +135,6 @@ private fun ServerInputStep(
         OutlinedTextField(
             value = serverUrl,
             onValueChange = onServerUrlChange,
-            placeholder = { Text("https://cloud.example.com") },
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .focusRequester(focusRequester),
@@ -132,7 +145,11 @@ private fun ServerInputStep(
             keyboardActions = KeyboardActions(
                 onGo = { if (!isLoading) onInitiateLogin() }
             ),
-            singleLine = true
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.inverseSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.inverseSurface
+            ),
+            singleLine = true,
         )
 
         if (error != null) {
@@ -173,7 +190,6 @@ private fun QrCodeStep(
     loginUrl: String?,
     isLoading: Boolean,
     error: String?,
-    authResult: top.k88936.nextcloud.auth.PollResponse?,
     onPoll: () -> Unit,
     onCancel: () -> Unit
 ) {
@@ -191,76 +207,51 @@ private fun QrCodeStep(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        if (authResult != null) {
-            Text(
-                text = "Authentication Successful!",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary
+        Text(
+            text = "Auth in your browser",
+            color = MaterialTheme.colorScheme.inverseSurface,
+            style = MaterialTheme.typography.headlineMedium,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (qrBitmap != null) {
+            Image(
+                bitmap = qrBitmap.asImageBitmap(),
+                contentDescription = "QR Code for login",
+                modifier = Modifier.size(256.dp)
             )
+        }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Logged in as: ${authResult.loginName}",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Server: ${authResult.server}",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(onClick = onCancel) {
-                Text("Done")
-            }
-        } else {
-            Text(
-                text = "Auth in your browser",
-                style = MaterialTheme.typography.headlineMedium,
-            )
-
+        if (error != null) {
             Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
 
-            if (qrBitmap != null) {
-                Image(
-                    bitmap = qrBitmap.asImageBitmap(),
-                    contentDescription = "QR Code for login",
-                    modifier = Modifier.size(256.dp)
-                )
-            }
+        Spacer(modifier = Modifier.height(24.dp))
 
-            if (error != null) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.Center
+        Row(
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Button(
+                onClick = onCancel,
+                enabled = !isLoading
             ) {
-                Button(
-                    onClick = onCancel,
-                    enabled = !isLoading
-                ) {
-                    Text("Cancel")
-                }
+                Text("Cancel")
+            }
 
-                Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-                Button(
-                    onClick = onPoll,
-                    enabled = !isLoading,
-                    modifier = Modifier.focusRequester(focusRequester)
-                ) {
-                    Text(if (isLoading) "Checking..." else "I've finished auth")
-                }
+            Button(
+                onClick = onPoll,
+                enabled = !isLoading,
+                modifier = Modifier.focusRequester(focusRequester)
+            ) {
+                Text(if (isLoading) "Checking..." else "I've finished auth")
             }
         }
     }

@@ -102,4 +102,19 @@ dependencies {
 
     // No-op SLF4J for Ktor (required for Android compatibility)
     implementation(libs.slf4j.nop)
+
+    // Koin DI
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
+    implementation(libs.koin.compose)
+    implementation(libs.koin.compose.viewmodel)
+
+    // Security
+    implementation(libs.security.crypto)
+
+    // Lifecycle
+    implementation(libs.lifecycle.viewmodel)
+    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.lifecycle.runtime.compose)
 }

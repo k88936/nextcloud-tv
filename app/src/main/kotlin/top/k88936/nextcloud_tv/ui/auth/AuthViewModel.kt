@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import top.k88936.nextcloud.auth.LoginFlowV2
 import top.k88936.nextcloud.auth.PollResponse
+import top.k88936.nextcloud_tv.data.repository.AuthRepository
 
 
 data class AuthState(
@@ -27,7 +28,9 @@ enum class AuthStep {
     QR_CODE
 }
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel(
+    private val authRepository: AuthRepository
+) : ViewModel() {
     private val _state = MutableStateFlow(AuthState())
     val state: StateFlow<AuthState> = _state.asStateFlow()
 
@@ -88,6 +91,7 @@ class AuthViewModel : ViewModel() {
                 onSuccess = { response ->
                     if (response != null) {
                         Log.d(TAG, "pollOnce: auth successful, server=${response.server}")
+                        authRepository.saveAuth(response)
                         _state.value = _state.value.copy(
                             authResult = response,
                             isLoading = false

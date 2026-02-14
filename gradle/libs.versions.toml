@@ -18,6 +18,9 @@ kotlintest = "3.4.2"
 logback = "1.5.29"
 zxing = "3.5.4"
 slf4j = "2.0.17"
+koin = "4.0.0"
+security-crypto = "1.1.0-alpha06"
+lifecycle = "2.8.7"
 
 
 [libraries]
@@ -55,6 +58,18 @@ kotlintest-runner-junit5 = { module = "io.kotlintest:kotlintest-runner-junit5", 
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
+
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
+koin-core = { module = "io.insert-koin:koin-core" }
+koin-android = { module = "io.insert-koin:koin-android" }
+koin-compose = { module = "io.insert-koin:koin-compose" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
+
+security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
+
+lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
