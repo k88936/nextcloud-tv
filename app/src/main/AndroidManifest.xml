@@ -20,10 +20,10 @@
             android:theme="@style/Theme.NextcloudTV">
         <activity
                 android:name=".MainActivity"
-                android:banner="@drawable/app_icon_your_company"
+                android:banner="@drawable/logo"
                 android:exported="true"
-                android:icon="@drawable/app_icon_your_company"
-                android:logo="@drawable/app_icon_your_company"
+                android:icon="@drawable/logo"
+                android:logo="@drawable/logo"
                 android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

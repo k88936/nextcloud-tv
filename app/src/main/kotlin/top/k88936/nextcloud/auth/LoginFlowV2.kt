@@ -41,7 +41,9 @@ object LoginFlowV2 {
         return runCatching {
             HttpClient(OkHttp) {
                 install(ContentNegotiation) {
-                    json(Json { ignoreUnknownKeys = true })
+                    json(Json {
+                        ignoreUnknownKeys = true
+                    })
                 }
             }.use { client ->
                 val url = serverUrl.trimEnd('/') + "/index.php/login/v2"

@@ -1,50 +1,51 @@
 package top.k88936.nextcloud_tv.ui.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Files
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Photos
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(
     val route: String,
     val title: String,
     val icon: ImageVector
-) {
+)
+
+object Screens {
     data object Home : Screen(
         route = "home",
         title = "Home",
-        icon = Icons.Default.Home
+        icon = Icons.Filled.Home
     )
 
     data object Files : Screen(
         route = "files",
         title = "Files",
-        icon = Icons.Default.Star
+        icon = Icons.Filled.Files
     )
 
     data object Photos : Screen(
         route = "photos",
         title = "Photos",
-        icon = Icons.Default.Person
+        icon = Icons.Filled.Photos
     )
 
     data object Music : Screen(
         route = "music",
         title = "Music",
-        icon = Icons.Default.Info
+        icon = Icons.Filled.PlayArrow
     )
 
     data object Settings : Screen(
         route = "settings",
         title = "Settings",
-        icon = Icons.Default.Settings
+        icon = Icons.Filled.Settings
     )
 
-    companion object {
-        val items = listOf(Home, Files, Photos, Music, Settings)
-        val startDestination = Home
-    }
+    val items = listOf(Files, Photos, Music, Settings)
+    val startDestination = Files
 }

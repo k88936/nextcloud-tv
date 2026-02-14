@@ -3,6 +3,7 @@ package top.k88936.nextcloud_tv.ui.navigation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -29,11 +30,9 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.NavigationDrawer
 import androidx.tv.material3.NavigationDrawerItem
-import androidx.tv.material3.NavigationDrawerScope
 import androidx.tv.material3.Text
 import androidx.tv.material3.rememberDrawerState
 import top.k88936.nextcloud_tv.ui.screens.files.FilesScreen
-import top.k88936.nextcloud_tv.ui.screens.home.HomeScreen
 import top.k88936.nextcloud_tv.ui.screens.music.MusicScreen
 import top.k88936.nextcloud_tv.ui.screens.photos.PhotosScreen
 import top.k88936.nextcloud_tv.ui.screens.settings.SettingsScreen
@@ -47,7 +46,7 @@ fun AppNavigation(
     var selectedIndex by remember { mutableIntStateOf(0) }
 
     NavigationDrawer(
-        drawerState=drawerState,
+        drawerState = drawerState,
         drawerContent = {
             Column(
                 modifier = Modifier
@@ -58,12 +57,12 @@ fun AppNavigation(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Screen.items.forEachIndexed { index, screen ->
+                Screens.items.forEachIndexed { index, screen ->
                     NavigationDrawerItem(
                         selected = selectedIndex == index,
                         onClick = {
                             selectedIndex = index
-                            navController.navigate(Screen.items[index].route)
+                            navController.navigate(Screens.items[index].route)
                         },
                         leadingContent = {
                             Icon(
@@ -75,27 +74,25 @@ fun AppNavigation(
                         Text(screen.title)
                     }
                 }
+
             }
         },
         modifier = modifier,
     ) {
         NavHost(
             navController = navController,
-            startDestination = Screen.startDestination.route
+            startDestination = Screens.startDestination.route
         ) {
-            composable(Screen.Home.route) {
-                HomeScreen()
-            }
-            composable(Screen.Files.route) {
+            composable(Screens.Files.route) {
                 FilesScreen()
             }
-            composable(Screen.Photos.route) {
+            composable(Screens.Photos.route) {
                 PhotosScreen()
             }
-            composable(Screen.Music.route) {
+            composable(Screens.Music.route) {
                 MusicScreen()
             }
-            composable(Screen.Settings.route) {
+            composable(Screens.Settings.route) {
                 SettingsScreen()
             }
         }

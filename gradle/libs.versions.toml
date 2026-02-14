@@ -1,5 +1,5 @@
 [versions]
-agp = "9.0.0"
+agp = "9.0.1"
 coreKtx = "1.17.0"
 leanback = "1.2.0"
 glide = "5.0.5"
@@ -15,9 +15,9 @@ kotlin = "2.3.10"
 ktor="3.4.0"
 kotlinx-coroutines = "1.10.2"
 kotlintest = "3.4.2"
-logback = "1.5.12"
-zxing = "3.5.3"
-slf4j = "2.0.16"
+logback = "1.5.29"
+zxing = "3.5.4"
+slf4j = "2.0.17"
 
 
 [libraries]
@@ -43,8 +43,10 @@ compose-tv-material = { group = "androidx.tv", name = "tv-material", version.ref
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.8.0" }
+ktor-serialization-xml = { module = "io.ktor:ktor-serialization-kotlinx-xml", version.ref = "ktor" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.10.0" }
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
