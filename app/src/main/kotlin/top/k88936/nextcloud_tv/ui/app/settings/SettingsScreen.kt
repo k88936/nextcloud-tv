@@ -1,4 +1,4 @@
-package top.k88936.nextcloud_tv.ui.screens.settings
+package top.k88936.nextcloud_tv.ui.app.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

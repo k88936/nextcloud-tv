@@ -1,4 +1,4 @@
-package top.k88936.nextcloud_tv.ui.screens.files
+package top.k88936.nextcloud_tv.ui.app.files
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -39,9 +39,9 @@ class FilesViewModel(
             
             result.fold(
                 onSuccess = { files ->
-                    val sortedFiles = files.filter { !it.name.isNullOrEmpty() }
+                    val sortedFiles = files.filter { it.name.isNotEmpty() }
                         .sortedWith(compareBy<FileMetadata> { !it.isDirectory }.thenBy {
-                            it.name?.lowercase() ?: ""
+                            it.name.lowercase()
                         })
                     _state.value = _state.value.copy(
                         files = sortedFiles,
@@ -75,6 +75,10 @@ class FilesViewModel(
 
     fun refresh() {
         loadFiles(_state.value.currentPath)
+    }
+
+    fun setFocusedFilePath(path: String?) {
+        _state.value = _state.value.copy(focusedFilePath = path)
     }
 
 }

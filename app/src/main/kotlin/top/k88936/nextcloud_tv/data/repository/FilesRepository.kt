@@ -13,7 +13,8 @@ data class FilesState(
     val files: List<FileMetadata> = emptyList(),
     val currentPath: String = "/",
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val focusedFilePath: String? = null
 )
 
 class FilesRepository(
@@ -88,6 +89,40 @@ class FilesRepository(
             bytes
         }.onFailure { error ->
             Log.e(TAG, "getPreview: failed - ${error.message}", error)
+        }
+    }
+
+    suspend fun getFileContent(file: FileMetadata): Result<ByteArray> {
+        Log.d(TAG, "getFileContent: file=${file.path}, url=${file.url}")
+        val client = nextcloudClient.getClient()
+            ?: run {
+                Log.w(TAG, "getFileContent: not authenticated (no client)")
+                return Result.failure(IllegalStateException("Not authenticated"))
+            }
+        return runCatching {
+            val response = client.get(file.url)
+            val bytes = response.body<ByteArray>()
+            Log.d(TAG, "getFileContent: success, received ${bytes.size} bytes")
+            bytes
+        }.onFailure { error ->
+            Log.e(TAG, "getFileContent: failed - ${error.message}", error)
+        }
+    }
+
+    suspend fun getFileContentByUrl(url: String): Result<ByteArray> {
+        Log.d(TAG, "getFileContentByUrl: url=$url")
+        val client = nextcloudClient.getClient()
+            ?: run {
+                Log.w(TAG, "getFileContentByUrl: not authenticated (no client)")
+                return Result.failure(IllegalStateException("Not authenticated"))
+            }
+        return runCatching {
+            val response = client.get(url)
+            val bytes = response.body<ByteArray>()
+            Log.d(TAG, "getFileContentByUrl: success, received ${bytes.size} bytes")
+            bytes
+        }.onFailure { error ->
+            Log.e(TAG, "getFileContentByUrl: failed - ${error.message}", error)
         }
     }
 }

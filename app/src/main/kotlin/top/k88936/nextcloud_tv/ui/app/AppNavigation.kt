@@ -1,4 +1,4 @@
-package top.k88936.nextcloud_tv.ui.navigation
+package top.k88936.nextcloud_tv.ui.app
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +15,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -28,18 +27,18 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import androidx.tv.material3.rememberDrawerState
-import top.k88936.nextcloud_tv.ui.screens.files.FilesScreen
-import top.k88936.nextcloud_tv.ui.screens.music.MusicScreen
-import top.k88936.nextcloud_tv.ui.screens.photos.PhotosScreen
-import top.k88936.nextcloud_tv.ui.screens.settings.SettingsScreen
+import top.k88936.nextcloud_tv.ui.app.files.FilesScreen
+import top.k88936.nextcloud_tv.ui.app.music.MusicScreen
+import top.k88936.nextcloud_tv.ui.app.photos.PhotosScreen
+import top.k88936.nextcloud_tv.ui.app.settings.SettingsScreen
 
 @Composable
 fun AppNavigation(
-    modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController(),
+    modifier: Modifier = Modifier
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Open)
     var selectedIndex by remember { mutableIntStateOf(0) }
+    val innerNavController = rememberNavController()
 
     NavigationDrawer(
         drawerState = drawerState,
@@ -58,7 +57,7 @@ fun AppNavigation(
                         selected = selectedIndex == index,
                         onClick = {
                             selectedIndex = index
-                            navController.navigate(Screens.items[index].route) {
+                            innerNavController.navigate(Screens.items[index].route) {
                                 popUpTo(Screens.startDestination.route) {
                                     saveState = true
                                 }
@@ -90,7 +89,7 @@ fun AppNavigation(
         ) {
 
             NavHost(
-                navController = navController,
+                navController = innerNavController,
                 startDestination = Screens.startDestination.route
             ) {
                 composable(Screens.Files.route) {

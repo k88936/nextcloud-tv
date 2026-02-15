@@ -4,11 +4,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import top.k88936.nextcloud.auth.PollResponse
-import top.k88936.nextcloud_tv.data.local.CredentialStore
 import top.k88936.nextcloud_tv.data.local.Credentials
+import top.k88936.nextcloud_tv.data.local.ICredentialStore
 
 class AuthRepository(
-    private val credentialStore: CredentialStore
+    private val credentialStore: ICredentialStore
 ) {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Initializing)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()

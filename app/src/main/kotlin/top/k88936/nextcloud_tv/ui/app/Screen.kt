@@ -1,8 +1,7 @@
-package top.k88936.nextcloud_tv.ui.navigation
+package top.k88936.nextcloud_tv.ui.app
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Files
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Photos
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings2
@@ -15,12 +14,6 @@ sealed class Screen(
 )
 
 object Screens {
-    data object Home : Screen(
-        route = "home",
-        title = "Home",
-        icon = Icons.Filled.Home
-    )
-
     data object Files : Screen(
         route = "files",
         title = "Files",

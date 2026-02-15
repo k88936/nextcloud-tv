@@ -1,5 +1,6 @@
-package top.k88936.nextcloud_tv.ui.screens.files
+package top.k88936.nextcloud_tv.ui.app.files
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -8,6 +9,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -52,6 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
 import top.k88936.nextcloud_tv.data.repository.FilesRepository
+import top.k88936.nextcloud_tv.navigation.LocalNavController
 import top.k88936.nextcloud_tv.ui.Icon.filetypes.Audio
 import top.k88936.nextcloud_tv.ui.Icon.filetypes.File
 import top.k88936.nextcloud_tv.ui.Icon.filetypes.Folder
@@ -68,11 +71,23 @@ fun FilesScreen(
     modifier: Modifier = Modifier,
     viewModel: FilesViewModel = koinViewModel()
 ) {
-
+    val navController = LocalNavController.current
     val state by viewModel.state.collectAsState()
     val canGoBack = state.currentPath != "/"
     val focusRequester = remember { FocusRequester() }
 
+    fun handleSelectFile(file: FileMetadata) {
+        if (file.isDirectory) {
+            viewModel.navigateToDirectory(file)
+            return
+        }
+        if (file.contentType?.startsWith("image/") == true) {
+            navController.navigate(
+                "photo_viewer?url=${file.url}&name=${file.name}"
+            )
+        }
+
+    }
     LaunchedEffect(state.isLoading) {
         focusRequester.requestFocus()
     }
@@ -172,7 +187,7 @@ fun FilesScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .focusRequester(focusRequester),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                        contentPadding = PaddingValues(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
@@ -180,14 +195,12 @@ fun FilesScreen(
                             FileCard(
                                 file = file,
                                 filesRepository = viewModel.filesRepository,
-                                onClick = { viewModel.navigateToDirectory(file) }
+                                onSelect = { handleSelectFile(file) }
                             )
                         }
                     }
-
                 }
             }
-
             if (state.isLoading) {
                 Box(
                     modifier = Modifier
@@ -202,14 +215,15 @@ fun FilesScreen(
     }
 }
 
+
 @Composable
 private fun FileCard(
     file: FileMetadata,
     filesRepository: FilesRepository,
-    onClick: () -> Unit
+    onSelect: () -> Unit,
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    var previewBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(file.path) {
         if (!file.isDirectory) {
@@ -226,8 +240,9 @@ private fun FileCard(
         }
     }
 
+
     Card(
-        onClick = onClick,
+        onClick = onSelect,
         modifier = Modifier
             .aspectRatio(1f)
             .onFocusEvent { focusState ->

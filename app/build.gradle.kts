@@ -96,6 +96,8 @@ dependencies {
 
     // Test dependencies
     testImplementation(libs.kotlintest.runner.junit5)
+    testImplementation(libs.koin.test)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 
     // QR Code generation
     implementation(libs.zxing.core)

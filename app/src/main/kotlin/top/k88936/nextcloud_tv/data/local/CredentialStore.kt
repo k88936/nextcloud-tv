@@ -10,7 +10,14 @@ data class Credentials(
     val appPassword: String
 )
 
-class CredentialStore(context: Context) {
+interface ICredentialStore {
+    fun saveCredentials(credentials: Credentials)
+    fun getCredentials(): Credentials?
+    fun hasCredentials(): Boolean
+    fun clearCredentials()
+}
+
+class CredentialStore(context: Context) : ICredentialStore {
     
     private val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -24,7 +31,7 @@ class CredentialStore(context: Context) {
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
 
-    fun saveCredentials(credentials: Credentials) {
+    override fun saveCredentials(credentials: Credentials) {
         sharedPreferences.edit()
             .putString(KEY_SERVER_URL, credentials.serverUrl)
             .putString(KEY_LOGIN_NAME, credentials.loginName)
@@ -32,20 +39,20 @@ class CredentialStore(context: Context) {
             .apply()
     }
 
-    fun getCredentials(): Credentials? {
+    override fun getCredentials(): Credentials? {
         val serverUrl = sharedPreferences.getString(KEY_SERVER_URL, null) ?: return null
         val loginName = sharedPreferences.getString(KEY_LOGIN_NAME, null) ?: return null
         val appPassword = sharedPreferences.getString(KEY_APP_PASSWORD, null) ?: return null
         return Credentials(serverUrl, loginName, appPassword)
     }
 
-    fun hasCredentials(): Boolean {
+    override fun hasCredentials(): Boolean {
         return sharedPreferences.contains(KEY_SERVER_URL) &&
                 sharedPreferences.contains(KEY_LOGIN_NAME) &&
                 sharedPreferences.contains(KEY_APP_PASSWORD)
     }
 
-    fun clearCredentials() {
+    override fun clearCredentials() {
         sharedPreferences.edit()
             .remove(KEY_SERVER_URL)
             .remove(KEY_LOGIN_NAME)
