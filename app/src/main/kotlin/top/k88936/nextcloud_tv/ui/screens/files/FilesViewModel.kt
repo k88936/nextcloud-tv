@@ -78,13 +78,4 @@ class FilesViewModel(
         loadFiles(_state.value.currentPath)
     }
 
-    fun getPreviewUrl(
-        file: String = "",
-        x: Long = 32,
-        y: Long = 32,
-        a: Int = 0,
-        forceIcon: Int = 1,
-        mode: String = "fill"
-    ): String? = filesRepository.getPreviewUrl(file, x, y, a, forceIcon, mode)
-
 }

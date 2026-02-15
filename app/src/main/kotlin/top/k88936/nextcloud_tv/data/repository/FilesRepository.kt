@@ -93,26 +93,6 @@ class FilesRepository {
         }
     }
 
-    fun getPreviewUrl(
-        file: String = "",
-        x: Long = 32,
-        y: Long = 32,
-        a: Int = 0,
-        forceIcon: Int = 1,
-        mode: String = "fill"
-    ): String? {
-        val credentials = currentCredentials ?: return null
-        return URLBuilder(credentials.serverUrl).apply {
-            set(path = "/index.php/core/preview.png")
-            parameters.append("file", file)
-            parameters.append("x", x.toString())
-            parameters.append("y", y.toString())
-            parameters.append("a", a.toString())
-            parameters.append("forceIcon", forceIcon.toString())
-            parameters.append("mode", mode)
-        }.buildString()
-    }
-
     fun clear() {
         httpClient?.close()
         httpClient = null
