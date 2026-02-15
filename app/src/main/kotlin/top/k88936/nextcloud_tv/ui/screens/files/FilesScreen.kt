@@ -4,6 +4,7 @@ import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,16 +34,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.Button
-import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
+import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
@@ -65,9 +68,14 @@ fun FilesScreen(
     modifier: Modifier = Modifier,
     viewModel: FilesViewModel = koinViewModel()
 ) {
+
     val state by viewModel.state.collectAsState()
     val canGoBack = state.currentPath != "/"
+    val focusRequester = remember { FocusRequester() }
 
+    LaunchedEffect(state.isLoading) {
+        focusRequester.requestFocus()
+    }
     BackHandler(enabled = canGoBack) {
         viewModel.navigateUp()
     }
@@ -85,17 +93,17 @@ fun FilesScreen(
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Button(
-                    onClick = { viewModel.navigateUp() },
-                    colors = ButtonDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        modifier = Modifier.size(24.dp)
-                    )
+                if (canGoBack) {
+                    Spacer(modifier = Modifier.width(16.dp))
+                    IconButton(
+                        onClick = { viewModel.navigateUp() },
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
@@ -112,66 +120,82 @@ fun FilesScreen(
                 )
             }
         }
-        when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Loading...", style = MaterialTheme.typography.bodyLarge)
-                }
-            }
 
-            state.error != null -> {
-                val error = state.error
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Error",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        if (error != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .focusable()
+                .focusRequester(focusRequester)
+        ) {
+            val gridState = rememberLazyGridState()
+
+            when {
+                state.error != null -> {
+                    val error = state.error
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = error,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(top = 8.dp)
+                                text = "Error",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.error
                             )
+                            if (error != null) {
+                                Text(
+                                    text = error,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            state.files.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No files found",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                state.files.isEmpty() && !state.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No files found",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+
+                state.files.isNotEmpty() -> {
+                    LazyVerticalGrid(
+                        state = gridState,
+                        columns = GridCells.Adaptive(minSize = 128.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .focusRequester(focusRequester),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(state.files, key = { it.path }) { file ->
+                            FileCard(
+                                file = file,
+                                filesRepository = viewModel.filesRepository,
+                                onClick = { viewModel.navigateToDirectory(file) }
+                            )
+                        }
+                    }
+
                 }
             }
 
-            else -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 128.dp),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+            if (state.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    items(state.files) { file ->
-                        FileCard(
-                            file = file,
-                            filesRepository = viewModel.filesRepository,
-                            onClick = { viewModel.navigateToDirectory(file) }
-                        )
-                    }
+                    Text("Loading...", style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
@@ -279,13 +303,11 @@ private fun FileCard(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.8f)
                         )
-                        file.lastModified?.let { date ->
-                            Text(
-                                text = formatDate(date),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.8f)
-                            )
-                        }
+                        Text(
+                            text = formatDate(file.lastModified),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.8f)
+                        )
                     }
                     if (!file.isDirectory && !file.contentType.isNullOrEmpty()) {
                         Spacer(modifier = Modifier.height(2.dp))
@@ -309,7 +331,6 @@ private fun getFileIcon(contentType: String?): ImageVector {
         contentType.startsWith("audio/") -> Icons.Filled.Audio
         contentType.startsWith("text/") -> Icons.Filled.Text
         contentType == "application/pdf" -> Icons.Filled.Pdf
-        contentType.contains("zip") || contentType.contains("rar") || contentType.contains("tar") -> Icons.Filled.File
         else -> Icons.Filled.File
     }
 }
@@ -329,7 +350,7 @@ private fun formatDate(dateString: String): String {
         val outputFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
         val date = inputFormat.parse(dateString)
         date?.let { outputFormat.format(it) } ?: dateString
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         dateString
     }
 }
