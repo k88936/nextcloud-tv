@@ -14,7 +14,7 @@ import top.k88936.webdav.FileMetadata
 
 class FilesViewModel(
     private val authRepository: AuthRepository,
-    private val filesRepository: FilesRepository
+    val filesRepository: FilesRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FilesState())
@@ -40,8 +40,10 @@ class FilesViewModel(
             
             result.fold(
                 onSuccess = { files ->
-                    val sortedFiles = files.filter { !it.fileName.isNullOrEmpty() }
-                        .sortedWith(compareBy<FileMetadata> { !it.isDirectory }.thenBy { it.fileName?.lowercase() ?: "" })
+                    val sortedFiles = files.filter { !it.name.isNullOrEmpty() }
+                        .sortedWith(compareBy<FileMetadata> { !it.isDirectory }.thenBy {
+                            it.name?.lowercase() ?: ""
+                        })
                     _state.value = _state.value.copy(
                         files = sortedFiles,
                         isLoading = false
@@ -59,15 +61,16 @@ class FilesViewModel(
 
     fun navigateToDirectory(directory: FileMetadata) {
         if (directory.isDirectory) {
-            loadFiles(extractPath(directory.url))
+            loadFiles(directory.path)
         }
     }
 
     fun navigateUp() {
         val currentPath = _state.value.currentPath
         if (currentPath != "/") {
-            val parentPath = currentPath.substringBeforeLast('/').ifEmpty { "/" }
-            loadFiles(parentPath)
+            val pathWithoutTrailingSlash = currentPath.trimEnd('/')
+            val parentPath = pathWithoutTrailingSlash.substringBeforeLast('/')
+            loadFiles(if (parentPath.isEmpty()) "/" else "$parentPath/")
         }
     }
 
@@ -75,12 +78,13 @@ class FilesViewModel(
         loadFiles(_state.value.currentPath)
     }
 
-    private fun extractPath(url: String): String {
-        return try {
-            val path = java.net.URL(url).path
-            path
-        } catch (e: Exception) {
-            "/"
-        }
-    }
+    fun getPreviewUrl(
+        file: String = "",
+        x: Long = 32,
+        y: Long = 32,
+        a: Int = 0,
+        forceIcon: Int = 1,
+        mode: String = "fill"
+    ): String? = filesRepository.getPreviewUrl(file, x, y, a, forceIcon, mode)
+
 }

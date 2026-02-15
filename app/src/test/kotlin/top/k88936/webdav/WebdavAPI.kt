@@ -35,7 +35,7 @@ class WebdavAPI : ShouldSpec() {
 
     init {
         should("list root folder") {
-            val result = DavAPI.listFolder(client, webDavUrl, "/Documents")
+            val result = DavAPI.listFolder(client, webDavUrl, "/")
             result.fold(
                 onSuccess = { resources ->
                     println("Found ${resources.size} items:")

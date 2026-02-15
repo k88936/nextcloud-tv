@@ -1,6 +1,5 @@
 package top.k88936.nextcloud_tv.ui.auth
 
-import android.R.attr.singleLine
 import android.app.Activity
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
@@ -22,8 +21,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldColors
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -31,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.asImageBitmap
@@ -40,15 +38,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
-import top.k88936.nextcloud_tv.data.repository.AuthRepository
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -72,7 +67,9 @@ fun AuthScreen(
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth(0.6f)
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .alpha(0.9f)
         ) {
             BackHandler(enabled = state.step == AuthStep.QR_CODE) {
                 viewModel.goBack()

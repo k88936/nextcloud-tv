@@ -1,28 +1,61 @@
 package top.k88936.nextcloud_tv.ui.screens.files
 
+import android.graphics.BitmapFactory
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.ListItem
+import androidx.tv.material3.Button
+import androidx.tv.material3.ButtonDefaults
+import androidx.tv.material3.Card
+import androidx.tv.material3.CardDefaults
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
+import top.k88936.nextcloud_tv.data.repository.FilesRepository
+import top.k88936.nextcloud_tv.ui.Icon.filetypes.Audio
+import top.k88936.nextcloud_tv.ui.Icon.filetypes.File
+import top.k88936.nextcloud_tv.ui.Icon.filetypes.Folder
+import top.k88936.nextcloud_tv.ui.Icon.filetypes.Image
+import top.k88936.nextcloud_tv.ui.Icon.filetypes.Pdf
+import top.k88936.nextcloud_tv.ui.Icon.filetypes.Text
+import top.k88936.nextcloud_tv.ui.Icon.filetypes.Video
 import top.k88936.webdav.FileMetadata
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -33,27 +66,52 @@ fun FilesScreen(
     viewModel: FilesViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val canGoBack = state.currentPath != "/"
+
+    BackHandler(enabled = canGoBack) {
+        viewModel.navigateUp()
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
+        Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(MaterialTheme.colorScheme.surface)
+                .alpha(0.8f),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Text(
-                text = "Files",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = state.currentPath,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.alpha(0.7f)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Button(
+                    onClick = { viewModel.navigateUp() },
+                    colors = ButtonDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = "Files",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.width(32.dp))
+                Text(
+                    text = state.currentPath,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.alpha(0.7f)
+                )
+            }
         }
-
         when {
             state.isLoading -> {
                 Box(
@@ -100,12 +158,17 @@ fun FilesScreen(
             }
 
             else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 128.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(state.files) { file ->
-                        FileItem(
+                        FileCard(
                             file = file,
+                            filesRepository = viewModel.filesRepository,
                             onClick = { viewModel.navigateToDirectory(file) }
                         )
                     }
@@ -116,49 +179,139 @@ fun FilesScreen(
 }
 
 @Composable
-private fun FileItem(
+private fun FileCard(
     file: FileMetadata,
+    filesRepository: FilesRepository,
     onClick: () -> Unit
 ) {
-    ListItem(
-        selected = false,
+    var isFocused by remember { mutableStateOf(false) }
+    var previewBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    LaunchedEffect(file.path) {
+        if (!file.isDirectory) {
+            withContext(Dispatchers.IO) {
+                filesRepository.getPreview(
+                    file = file.path,
+                    x = 256,
+                    y = 256,
+                    forceIcon = 0
+                ).getOrNull()?.let { bytes ->
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                }?.let { previewBitmap = it }
+            }
+        }
+    }
+
+    Card(
         onClick = onClick,
-        headlineContent = {
-            Text(
-                text = file.fileName ?: "Unknown",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        supportingContent = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier
+            .aspectRatio(1f)
+            .onFocusEvent { focusState ->
+                isFocused = focusState.hasFocus
+            },
+        colors = CardDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 if (file.isDirectory) {
-                    Text("Folder")
-                } else {
-                file.size?.let { size ->
-                    Text(formatFileSize(size))
-                }
-                Text(formatDate(file.lastModified))
-                }
-                file.lastModified?.let { date ->
-                    Text(formatDate(date))
-                }
-            }
-        },
-        trailingContent = {
-            if (!file.isDirectory) {
-                file.contentType?.let { contentType ->
-                    Text(
-                        text = contentType.substringAfter('/').uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Icon(
+                        imageVector = Icons.Filled.Folder,
+                        contentDescription = "Folder",
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                } else if (previewBitmap != null) {
+                    Image(
+                        bitmap = previewBitmap!!.asImageBitmap(),
+                        contentDescription = file.name,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .aspectRatio(1f)
+                    )
+                } else {
+                    Icon(
+                        imageVector = getFileIcon(file.contentType),
+                        contentDescription = file.name,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = file.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            if (isFocused) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.9f))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = file.name,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = if (file.isDirectory) "Folder" else formatFileSize(
+                                file.size ?: 0
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.8f)
+                        )
+                        file.lastModified?.let { date ->
+                            Text(
+                                text = formatDate(date),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                    if (!file.isDirectory && !file.contentType.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = file.contentType.substringAfter('/').uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.6f)
+                        )
+                    }
                 }
             }
         }
-    )
+    }
+}
+
+private fun getFileIcon(contentType: String?): ImageVector {
+    return when {
+        contentType == null -> Icons.Filled.File
+        contentType.startsWith("image/") -> Icons.Filled.Image
+        contentType.startsWith("video/") -> Icons.Filled.Video
+        contentType.startsWith("audio/") -> Icons.Filled.Audio
+        contentType.startsWith("text/") -> Icons.Filled.Text
+        contentType == "application/pdf" -> Icons.Filled.Pdf
+        contentType.contains("zip") || contentType.contains("rar") || contentType.contains("tar") -> Icons.Filled.File
+        else -> Icons.Filled.File
+    }
 }
 
 private fun formatFileSize(bytes: Long): String {

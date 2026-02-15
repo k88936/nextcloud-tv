@@ -8,18 +8,12 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.URLBuilder
-import io.ktor.http.Url
 import io.ktor.http.contentType
-import io.ktor.http.encodedPath
 import io.ktor.http.set
-import io.ktor.http.takeFrom
 import kotlinx.serialization.Serializable
 import nl.adaptivity.xmlutil.serialization.XmlElement
 import nl.adaptivity.xmlutil.serialization.XmlSerialName
-import top.k88936.webdav.FileMetadata
-import java.net.URL
 import java.net.URLDecoder
-import java.nio.file.Files.isDirectory
 
 @Serializable
 @XmlSerialName("response", "DAV:", "d")
@@ -87,7 +81,6 @@ object DavAPI {
         path: String = "/"
     ): Result<List<FileMetadata>> {
 
-
         val basePath = serverUrl.trimEnd('/')
         val subPath = path.trimStart('/')
         val url = "$basePath/$subPath"
@@ -100,12 +93,14 @@ object DavAPI {
                 contentType(ContentType.Application.Xml)
             }
             response.body<List<DavItem>>().map { it ->
+                val itsURL = URLBuilder(serverUrl).apply {
+                    set(path = it.href)
+                }.buildString()
                 FileMetadata(
-                    url = URLBuilder(serverUrl).apply {
-                        set(path = it.href)
-                    }.buildString(),
+                    url = itsURL,
                     lastModified = it.propstat.prop.getlastmodified,
-                    fileName = URLDecoder.decode(it.href.substringAfterLast('/'), "UTF-8"),
+                    name = URLDecoder.decode(itsURL.substringAfter(url).trimStart('/'), "UTF-8"),
+                    path = itsURL.substringAfter(basePath),
                     size = it.propstat.prop.getcontentlength,
                     contentType = it.propstat.prop.getcontenttype,
                     isDirectory = it.propstat.prop.resourcetype.collection != null
