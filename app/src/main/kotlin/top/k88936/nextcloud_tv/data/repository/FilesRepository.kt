@@ -1,19 +1,11 @@
 package top.k88936.nextcloud_tv.data.repository
 
-import io.ktor.client.HttpClient
+import android.util.Log
 import io.ktor.client.call.body
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BasicAuthCredentials
-import io.ktor.client.plugins.auth.providers.basic
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.http.URLBuilder
 import io.ktor.http.set
-import io.ktor.serialization.kotlinx.xml.xml
-import nl.adaptivity.xmlutil.XmlDeclMode
-import nl.adaptivity.xmlutil.serialization.XML
-import top.k88936.nextcloud_tv.data.local.Credentials
+import top.k88936.nextcloud_tv.data.network.NextcloudClient
 import top.k88936.webdav.DavAPI
 import top.k88936.webdav.FileMetadata
 
@@ -24,47 +16,40 @@ data class FilesState(
     val error: String? = null
 )
 
-class FilesRepository {
-
-    private var httpClient: HttpClient? = null
-    private var currentCredentials: Credentials? = null
-
-    fun initialize(credentials: Credentials) {
-        if (currentCredentials == credentials && httpClient != null) return
-
-        currentCredentials = credentials
-        httpClient?.close()
-        httpClient = createHttpClient(credentials)
-    }
-
-    private fun createHttpClient(credentials: Credentials): HttpClient {
-        return HttpClient(OkHttp) {
-            install(ContentNegotiation) {
-                xml(XML {
-                    xmlDeclMode = XmlDeclMode.Charset
-                })
-            }
-            install(Auth) {
-                basic {
-                    credentials {
-                        BasicAuthCredentials(
-                            username = credentials.loginName,
-                            password = credentials.appPassword
-                        )
-                    }
-                }
-            }
-        }
+class FilesRepository(
+    private val nextcloudClient: NextcloudClient
+) {
+    private companion object {
+        private const val TAG = "FilesRepository"
     }
 
     suspend fun listFiles(path: String = "/"): Result<List<FileMetadata>> {
-        val client = httpClient ?: return Result.failure(IllegalStateException("Not authenticated"))
-        val credentials =
-            currentCredentials ?: return Result.failure(IllegalStateException("Not authenticated"))
+        Log.d(TAG, "listFiles: path=$path")
+        val client = nextcloudClient.getClient()
+            ?: run {
+                Log.w(TAG, "listFiles: not authenticated (no client)")
+                return Result.failure(IllegalStateException("Not authenticated"))
+            }
+        val credentials = nextcloudClient.getCredentials()
+            ?: run {
+                Log.w(TAG, "listFiles: not authenticated (no credentials)")
+                return Result.failure(IllegalStateException("Not authenticated"))
+            }
         val baseUrl = URLBuilder(credentials.serverUrl).apply {
             set(path = "/remote.php/dav/files/${credentials.loginName}")
         }.buildString()
-        return DavAPI.listFolder(client, baseUrl, path)
+        Log.d(TAG, "listFiles: calling DavAPI.listFolder with baseUrl=$baseUrl, path=$path")
+        return DavAPI.listFolder(client, baseUrl, path).also { result ->
+            result.fold(
+                onSuccess = { files ->
+                    Log.d(
+                        TAG,
+                        "listFiles: success, found ${files.size} items"
+                    )
+                },
+                onFailure = { error -> Log.e(TAG, "listFiles: failed - ${error.message}", error) }
+            )
+        }
     }
 
     suspend fun getPreview(
@@ -75,9 +60,17 @@ class FilesRepository {
         forceIcon: Int = 1,
         mode: String = "fill"
     ): Result<ByteArray> {
-        val client = httpClient ?: return Result.failure(IllegalStateException("Not authenticated"))
-        val credentials =
-            currentCredentials ?: return Result.failure(IllegalStateException("Not authenticated"))
+        Log.d(TAG, "getPreview: file=$file, x=$x, y=$y, mode=$mode")
+        val client = nextcloudClient.getClient()
+            ?: run {
+                Log.w(TAG, "getPreview: not authenticated (no client)")
+                return Result.failure(IllegalStateException("Not authenticated"))
+            }
+        val credentials = nextcloudClient.getCredentials()
+            ?: run {
+                Log.w(TAG, "getPreview: not authenticated (no credentials)")
+                return Result.failure(IllegalStateException("Not authenticated"))
+            }
         return runCatching {
             val url = URLBuilder(credentials.serverUrl).apply {
                 set(path = "/index.php/core/preview.png")
@@ -88,14 +81,13 @@ class FilesRepository {
                 parameters.append("forceIcon", forceIcon.toString())
                 parameters.append("mode", mode)
             }.buildString()
+            Log.d(TAG, "getPreview: requesting $url")
             val response = client.get(url)
-            response.body()
+            val bytes = response.body<ByteArray>()
+            Log.d(TAG, "getPreview: success, received ${bytes.size} bytes")
+            bytes
+        }.onFailure { error ->
+            Log.e(TAG, "getPreview: failed - ${error.message}", error)
         }
-    }
-
-    fun clear() {
-        httpClient?.close()
-        httpClient = null
-        currentCredentials = null
     }
 }

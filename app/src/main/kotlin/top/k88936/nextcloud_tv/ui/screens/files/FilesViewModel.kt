@@ -27,7 +27,6 @@ class FilesViewModel(
     private fun initializeAndLoadFiles() {
         val authState = authRepository.authState.value
         if (authState is AuthState.Authenticated) {
-            filesRepository.initialize(authState.credentials)
             loadFiles("/")
         }
     }
