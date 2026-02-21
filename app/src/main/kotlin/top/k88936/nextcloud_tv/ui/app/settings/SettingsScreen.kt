@@ -45,6 +45,7 @@ fun SettingsScreen(
     ) {
         Text(
             text = "Settings",
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.headlineMedium
         )
 
