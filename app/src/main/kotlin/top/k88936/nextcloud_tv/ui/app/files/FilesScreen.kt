@@ -192,9 +192,22 @@ fun FilesScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(state.files, key = { it.path }) { file ->
+                            val focusRequester = remember { FocusRequester() }
+                            LaunchedEffect(file.path) {
+                                if (file.path == viewModel.focusedItemId) {
+                                    focusRequester.requestFocus()
+                                }
+                            }
                             FileCard(
                                 file = file,
                                 filesRepository = viewModel.filesRepository,
+                                focusRequester = focusRequester,
+                                isFocusedTarget = file.path == viewModel.focusedItemId,
+                                onFocusChanged = { isFocused ->
+                                    if (isFocused) {
+                                        viewModel.updateFocusedItemId(file.path)
+                                    }
+                                },
                                 onSelect = { handleSelectFile(file) }
                             )
                         }
@@ -220,10 +233,19 @@ fun FilesScreen(
 private fun FileCard(
     file: FileMetadata,
     filesRepository: FilesRepository,
+    focusRequester: FocusRequester,
+    isFocusedTarget: Boolean,
+    onFocusChanged: (Boolean) -> Unit,
     onSelect: () -> Unit,
 ) {
     var isFocused by remember { mutableStateOf(false) }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    LaunchedEffect(isFocusedTarget) {
+        if (isFocusedTarget) {
+            focusRequester.requestFocus()
+        }
+    }
 
     LaunchedEffect(file.path) {
         if (!file.isDirectory) {
@@ -245,8 +267,10 @@ private fun FileCard(
         onClick = onSelect,
         modifier = Modifier
             .aspectRatio(1f)
+            .focusRequester(focusRequester)
             .onFocusEvent { focusState ->
                 isFocused = focusState.hasFocus
+                onFocusChanged(focusState.hasFocus)
             },
         colors = CardDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant

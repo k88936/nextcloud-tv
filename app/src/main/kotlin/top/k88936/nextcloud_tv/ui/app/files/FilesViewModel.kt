@@ -1,5 +1,8 @@
 package top.k88936.nextcloud_tv.ui.app.files
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +23,9 @@ class FilesViewModel(
     private val _state = MutableStateFlow(FilesState())
     val state: StateFlow<FilesState> = _state.asStateFlow()
 
+    var focusedItemId by mutableStateOf<String?>(null)
+        private set
+
     init {
         initializeAndLoadFiles()
     }
@@ -34,6 +40,7 @@ class FilesViewModel(
     fun loadFiles(path: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null, currentPath = path)
+            focusedItemId = null
             
             val result = filesRepository.listFiles(path)
             
@@ -77,8 +84,8 @@ class FilesViewModel(
         loadFiles(_state.value.currentPath)
     }
 
-    fun setFocusedFilePath(path: String?) {
-        _state.value = _state.value.copy(focusedFilePath = path)
+    fun updateFocusedItemId(id: String?) {
+        focusedItemId = id
     }
 
 }
