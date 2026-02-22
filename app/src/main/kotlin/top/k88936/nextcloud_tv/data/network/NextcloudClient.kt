@@ -20,8 +20,8 @@ import top.k88936.nextcloud_tv.data.repository.AuthRepository
 import top.k88936.nextcloud_tv.data.repository.AuthState
 
 class NextcloudClient(
-    private val authRepository: AuthRepository
-) {
+    val authRepository: AuthRepository
+) : INextcloudClient {
     private companion object {
         private const val TAG = "AuthenticatedHttpClient"
     }
@@ -95,8 +95,8 @@ class NextcloudClient(
         }
     }
 
-    fun getClient(): HttpClient? = httpClient
-    fun getCredentials(): Credentials? = currentCredentials
+    override fun getClient(): HttpClient? = httpClient
+    override fun getCredentials(): Credentials? = currentCredentials
 
     private fun clear() {
         Log.d(TAG, "Clearing HTTP client")

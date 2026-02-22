@@ -1,6 +1,8 @@
 [versions]
 agp = "9.0.1"
 coreKtx = "1.17.0"
+kotlinxCoroutinesTest = "1.10.2"
+ktorClientJava = "3.0.3"
 leanback = "1.2.0"
 glide = "5.0.5"
 nextcloud-android-library = "2.22.1"
@@ -27,6 +29,8 @@ lifecycle = "2.8.7"
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-leanback = { group = "androidx.leanback", name = "leanback", version.ref = "leanback" }
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
+ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktorClientJava" }
 nextcloud-android-library = { group = "com.github.nextcloud", name = "android-library", version.ref = "nextcloud-android-library" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coilCompose" }
 

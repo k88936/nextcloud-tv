@@ -5,7 +5,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.http.URLBuilder
 import io.ktor.http.set
-import top.k88936.nextcloud_tv.data.network.NextcloudClient
+import top.k88936.nextcloud_tv.data.network.INextcloudClient
 import top.k88936.webdav.DavAPI
 import top.k88936.webdav.FileMetadata
 
@@ -18,7 +18,7 @@ data class FilesState(
 )
 
 class FilesRepository(
-    private val nextcloudClient: NextcloudClient
+    private val nextcloudClient: INextcloudClient
 ) {
     private companion object {
         private const val TAG = "FilesRepository"
