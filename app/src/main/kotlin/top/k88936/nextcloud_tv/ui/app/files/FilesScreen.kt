@@ -308,12 +308,14 @@ private fun FileCard(
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = file.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (!isFocused) {
+                    Text(
+                        text = file.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             if (isFocused) {
