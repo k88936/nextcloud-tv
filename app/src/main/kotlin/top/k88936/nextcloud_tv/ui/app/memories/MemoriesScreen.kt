@@ -1,5 +1,11 @@
 package top.k88936.nextcloud_tv.ui.app.memories
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,7 +54,6 @@ fun MemoriesScreen(
     timelineViewModel: TimelineViewModel = koinViewModel()
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var focusedTabIndex by remember { mutableIntStateOf(selectedTabIndex) }
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -64,58 +69,81 @@ fun MemoriesScreen(
             )
         }
 
-        TabRow(
-            selectedTabIndex = focusedTabIndex,
-            modifier = Modifier.focusRestorer()
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            memoriesTabs.forEachIndexed { index, tab ->
-                key(index) {
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onFocus = { focusedTabIndex = index },
-                        onClick = {
-                            focusedTabIndex = index
-                            selectedTabIndex = index
-                        }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                modifier = Modifier.focusRestorer(),
+                separator = { Spacer(modifier = Modifier.width(4.dp)) }
+            ) {
+                memoriesTabs.forEachIndexed { index, tab ->
+                    key(index) {
+                        Tab(
+                            selected = selectedTabIndex == index,
+                            onFocus = {
+                                if (selectedTabIndex != index) {
+                                    selectedTabIndex = index
+                                }
+                            },
+                            onClick = {
+                                selectedTabIndex = index
+                            }
                         ) {
-                            Icon(
-                                imageVector = when (tab) {
-                                    is MemoriesTab.TimelineTab -> androidx.compose.material.icons.Icons.Filled.Timeline
-                                    is MemoriesTab.FavouritesTab -> androidx.compose.material.icons.Icons.Filled.Favourites
-                                    is MemoriesTab.OnThisDayTab -> androidx.compose.material.icons.Icons.Filled.OnThisDay
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = tab.title,
-                                fontSize = androidx.compose.ui.unit.TextUnit.Unspecified,
-                                style = MaterialTheme.typography.labelLarge
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = when (tab) {
+                                        is MemoriesTab.TimelineTab -> androidx.compose.material.icons.Icons.Filled.Timeline
+                                        is MemoriesTab.FavouritesTab -> androidx.compose.material.icons.Icons.Filled.Favourites
+                                        is MemoriesTab.OnThisDayTab -> androidx.compose.material.icons.Icons.Filled.OnThisDay
+                                    },
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = tab.title,
+                                    fontSize = androidx.compose.ui.unit.TextUnit.Unspecified,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        when (memoriesTabs[selectedTabIndex]) {
-            is MemoriesTab.TimelineTab -> TimelineTab(
-                modifier = Modifier.fillMaxSize(),
-                viewModel = timelineViewModel
-            )
+        AnimatedContent(
+            targetState = selectedTabIndex,
+            transitionSpec = {
+                if (targetState > initialState) {
+                    slideInHorizontally { width -> width } togetherWith
+                            slideOutHorizontally { width -> -width }
+                } else {
+                    slideInHorizontally { width -> -width } togetherWith
+                            slideOutHorizontally { width -> width }
+                }.using(SizeTransform(clip = false))
+            },
+            label = "TabContentAnimation"
+        ) { targetIndex ->
+            when (memoriesTabs[targetIndex]) {
+                is MemoriesTab.TimelineTab -> TimelineTab(
+                    modifier = Modifier.fillMaxSize(),
+                    viewModel = timelineViewModel
+                )
 
-            is MemoriesTab.FavouritesTab -> FavouritesTab(
-                modifier = Modifier.fillMaxSize()
-            )
+                is MemoriesTab.FavouritesTab -> FavouritesTab(
+                    modifier = Modifier.fillMaxSize()
+                )
 
-            is MemoriesTab.OnThisDayTab -> OnThisDayTab(
-                modifier = Modifier.fillMaxSize()
-            )
+                is MemoriesTab.OnThisDayTab -> OnThisDayTab(
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }
