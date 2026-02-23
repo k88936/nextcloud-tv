@@ -7,23 +7,29 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BasicAuthCredentials
 import io.ktor.client.plugins.auth.providers.basic
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.cookies.HttpCookies
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.header
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.serialization.kotlinx.xml.xml
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.serialization.XML
 import top.k88936.nextcloud_tv.data.local.Credentials
-import top.k88936.nextcloud_tv.data.repository.AuthRepository
 import top.k88936.nextcloud_tv.data.repository.AuthState
+import top.k88936.nextcloud_tv.data.repository.IAuthRepository
 
 class NextcloudClient(
-    val authRepository: AuthRepository
-) : INextcloudClient {
+    val authRepository: IAuthRepository
+) {
     private companion object {
         private const val TAG = "AuthenticatedHttpClient"
+        private const val OCS_API_REQUEST_HEADER = "OCS-APIRequest"
     }
 
     private var httpClient: HttpClient? = null
@@ -66,7 +72,7 @@ class NextcloudClient(
 
         Log.d(
             TAG,
-            "Initializing client for server: ${credentials.serverUrl}, user: ${credentials.loginName}"
+            "Initializing client for server: ${credentials.serverURL}, user: ${credentials.loginName}"
         )
         currentCredentials = credentials
         httpClient?.close()
@@ -78,6 +84,10 @@ class NextcloudClient(
         Log.d(TAG, "Creating new HTTP client")
         return HttpClient(OkHttp) {
             install(ContentNegotiation) {
+                json(Json {
+                    ignoreUnknownKeys = true
+                    isLenient = true
+                })
                 xml(XML {
                     xmlDeclMode = XmlDeclMode.Charset
                 })
@@ -92,11 +102,15 @@ class NextcloudClient(
                     }
                 }
             }
+            install(HttpCookies)
+            defaultRequest {
+                header(OCS_API_REQUEST_HEADER, "true")
+            }
         }
     }
 
-    override fun getClient(): HttpClient? = httpClient
-    override fun getCredentials(): Credentials? = currentCredentials
+    fun getClient(): HttpClient? = httpClient
+    fun getCredentials(): Credentials? = currentCredentials
 
     private fun clear() {
         Log.d(TAG, "Clearing HTTP client")

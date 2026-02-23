@@ -5,12 +5,13 @@ import io.kotlintest.specs.StringSpec
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
-import top.k88936.nextcloud.CredentialMock
+import top.k88936.nextcloud.TestCredential
 import top.k88936.nextcloud.auth.PollResponse
 import top.k88936.nextcloud_tv.data.local.Credentials
 import top.k88936.nextcloud_tv.data.local.ICredentialStore
 import top.k88936.nextcloud_tv.data.repository.AuthRepository
 import top.k88936.nextcloud_tv.data.repository.AuthState
+import top.k88936.nextcloud_tv.data.repository.IAuthRepository
 
 class MockCredentialStore : ICredentialStore {
     private var credentials: Credentials? = null
@@ -37,7 +38,7 @@ class AuthRepositoryTest : StringSpec() {
         startKoin {
             modules(module {
                 single<ICredentialStore> { mockCredentialStore }
-                single { AuthRepository(get()) }
+                single<IAuthRepository> { AuthRepository(get()) }
             })
         }
     }
@@ -54,44 +55,36 @@ class AuthRepositoryTest : StringSpec() {
 
         "initial state should be Authenticated when credentials exist" {
             mockCredentialStore.saveCredentials(
-                Credentials(
-                    serverUrl = CredentialMock.serverURL,
-                    loginName = CredentialMock.loginName,
-                    appPassword = CredentialMock.appPassword
-                )
+                TestCredential
             )
             val repo = AuthRepository(mockCredentialStore)
             val state = repo.authState.value
             (state is AuthState.Authenticated) shouldBe true
             state as AuthState.Authenticated
-            state.credentials.serverUrl shouldBe CredentialMock.serverURL
-            state.credentials.loginName shouldBe CredentialMock.loginName
-            state.credentials.appPassword shouldBe CredentialMock.appPassword
+            state.credentials.serverURL shouldBe TestCredential.serverURL
+            state.credentials.loginName shouldBe TestCredential.loginName
+            state.credentials.appPassword shouldBe TestCredential.appPassword
         }
 
         "saveAuth should update authState to Authenticated" {
             val pollResponse = PollResponse(
-                server = CredentialMock.serverURL,
-                loginName = CredentialMock.loginName,
-                appPassword = CredentialMock.appPassword
+                server = TestCredential.serverURL,
+                loginName = TestCredential.loginName,
+                appPassword = TestCredential.appPassword
             )
             val repo = AuthRepository(mockCredentialStore)
             repo.saveAuth(pollResponse)
             val state = repo.authState.value
             (state is AuthState.Authenticated) shouldBe true
             state as AuthState.Authenticated
-            state.credentials.serverUrl shouldBe CredentialMock.serverURL
-            state.credentials.loginName shouldBe CredentialMock.loginName
-            state.credentials.appPassword shouldBe CredentialMock.appPassword
+            state.credentials.serverURL shouldBe TestCredential.serverURL
+            state.credentials.loginName shouldBe TestCredential.loginName
+            state.credentials.appPassword shouldBe TestCredential.appPassword
         }
 
         "logout should update authState to Unauthenticated" {
             mockCredentialStore.saveCredentials(
-                Credentials(
-                    serverUrl = CredentialMock.serverURL,
-                    loginName = CredentialMock.loginName,
-                    appPassword = CredentialMock.appPassword
-                )
+                TestCredential
             )
             val repo = AuthRepository(mockCredentialStore)
             repo.logout()
@@ -105,11 +98,7 @@ class AuthRepositoryTest : StringSpec() {
         }
 
         "getCredentials should return credentials when authenticated" {
-            val expectedCredentials = Credentials(
-                serverUrl = CredentialMock.serverURL,
-                loginName = CredentialMock.loginName,
-                appPassword = CredentialMock.appPassword
-            )
+            val expectedCredentials = TestCredential
             mockCredentialStore.saveCredentials(expectedCredentials)
             val repo = AuthRepository(mockCredentialStore)
             repo.getCredentials() shouldBe expectedCredentials

@@ -48,6 +48,10 @@ extensions.configure<ApplicationExtension> {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+    }
 }
 
 dependencies {
@@ -67,6 +71,7 @@ dependencies {
     implementation(libs.ktor.client.auth)
     implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.serialization.xml)
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
@@ -98,6 +103,8 @@ dependencies {
     testImplementation(libs.kotlintest.runner.junit5)
     testImplementation(libs.koin.test)
     testImplementation(libs.ktor.client.okhttp)
+    testImplementation(libs.ktor.serialization.json)
+    testImplementation(libs.kotlinx.serialization.json)
 
     // QR Code generation
     implementation(libs.zxing.core)

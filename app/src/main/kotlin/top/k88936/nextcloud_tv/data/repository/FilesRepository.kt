@@ -5,7 +5,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.http.URLBuilder
 import io.ktor.http.set
-import top.k88936.nextcloud_tv.data.network.INextcloudClient
+import top.k88936.nextcloud_tv.data.network.NextcloudClient
 import top.k88936.webdav.DavAPI
 import top.k88936.webdav.FileMetadata
 
@@ -18,7 +18,7 @@ data class FilesState(
 )
 
 class FilesRepository(
-    private val nextcloudClient: INextcloudClient
+    private val nextcloudClient: NextcloudClient
 ) {
     private companion object {
         private const val TAG = "FilesRepository"
@@ -36,7 +36,7 @@ class FilesRepository(
                 Log.w(TAG, "listFiles: not authenticated (no credentials)")
                 return Result.failure(IllegalStateException("Not authenticated"))
             }
-        val baseUrl = URLBuilder(credentials.serverUrl).apply {
+        val baseUrl = URLBuilder(credentials.serverURL).apply {
             set(path = "/remote.php/dav/files/${credentials.loginName}")
         }.buildString()
         Log.d(TAG, "listFiles: calling DavAPI.listFolder with baseUrl=$baseUrl, path=$path")
@@ -73,7 +73,7 @@ class FilesRepository(
                 return Result.failure(IllegalStateException("Not authenticated"))
             }
         return runCatching {
-            val url = URLBuilder(credentials.serverUrl).apply {
+            val url = URLBuilder(credentials.serverURL).apply {
                 set(path = "/index.php/core/preview.png")
                 parameters.append("file", file)
                 parameters.append("x", x.toString())

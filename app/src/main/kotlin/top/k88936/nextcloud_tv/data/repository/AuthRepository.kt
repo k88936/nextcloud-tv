@@ -9,9 +9,9 @@ import top.k88936.nextcloud_tv.data.local.ICredentialStore
 
 class AuthRepository(
     private val credentialStore: ICredentialStore
-) {
+) : IAuthRepository {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Initializing)
-    val authState: StateFlow<AuthState> = _authState.asStateFlow()
+    override val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
         checkExistingAuth()
@@ -26,9 +26,9 @@ class AuthRepository(
         }
     }
 
-    fun saveAuth(response: PollResponse) {
+    override fun saveAuth(response: PollResponse) {
         val credentials = Credentials(
-            serverUrl = response.server,
+            serverURL = response.server,
             loginName = response.loginName,
             appPassword = response.appPassword
         )
@@ -36,12 +36,12 @@ class AuthRepository(
         _authState.value = AuthState.Authenticated(credentials)
     }
 
-    fun logout() {
+    override fun logout() {
         credentialStore.clearCredentials()
         _authState.value = AuthState.Unauthenticated
     }
 
-    fun getCredentials(): Credentials? {
+    override fun getCredentials(): Credentials? {
         return credentialStore.getCredentials()
     }
 }

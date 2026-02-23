@@ -2,53 +2,32 @@ package top.k88936.nextcloud.app
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BasicAuthCredentials
-import io.ktor.client.plugins.auth.providers.basic
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.serialization.kotlinx.xml.xml
-import nl.adaptivity.xmlutil.XmlDeclMode
-import nl.adaptivity.xmlutil.serialization.XML
-import top.k88936.nextcloud.CredentialMock
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import top.k88936.nextcloud.TestCredential
+import top.k88936.nextcloud.auth.PollResponse
 import top.k88936.nextcloud_tv.data.local.Credentials
-import top.k88936.nextcloud_tv.data.network.INextcloudClient
+import top.k88936.nextcloud_tv.data.network.NextcloudClient
+import top.k88936.nextcloud_tv.data.repository.AuthState
 import top.k88936.nextcloud_tv.data.repository.FilesRepository
+import top.k88936.nextcloud_tv.data.repository.IAuthRepository
 
-class TestNextcloudClient(
-    private val client: HttpClient,
+class TestAuthRepository(
     private val credentials: Credentials
-) : INextcloudClient {
-    override fun getClient(): HttpClient = client
+) : IAuthRepository {
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Authenticated(credentials))
+    override val authState: StateFlow<AuthState> = _authState
+
+    override fun saveAuth(response: PollResponse) {}
+    override fun logout() {}
     override fun getCredentials(): Credentials = credentials
 }
 
 class FilesRepositoryTest : ShouldSpec() {
-    private val client = HttpClient {
-        install(Auth) {
-            basic {
-                credentials {
-                    BasicAuthCredentials(
-                        CredentialMock.loginName,
-                        CredentialMock.appPassword
-                    )
-                }
-            }
-        }
-        install(ContentNegotiation) {
-            xml(XML {
-                xmlDeclMode = XmlDeclMode.Charset
-            })
-        }
-    }
+    private val credentials = TestCredential
 
-    private val credentials = Credentials(
-        serverUrl = CredentialMock.serverURL,
-        loginName = CredentialMock.loginName,
-        appPassword = CredentialMock.appPassword
-    )
-
-    private val nextcloudClient = TestNextcloudClient(client, credentials)
+    private val authRepository = TestAuthRepository(credentials)
+    private val nextcloudClient = NextcloudClient(authRepository)
     private val repository = FilesRepository(nextcloudClient)
 
     init {

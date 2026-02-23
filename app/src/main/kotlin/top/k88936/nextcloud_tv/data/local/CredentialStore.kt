@@ -1,11 +1,12 @@
 package top.k88936.nextcloud_tv.data.local
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
 data class Credentials(
-    val serverUrl: String,
+    val serverURL: String,
     val loginName: String,
     val appPassword: String
 )
@@ -18,7 +19,7 @@ interface ICredentialStore {
 }
 
 class CredentialStore(context: Context) : ICredentialStore {
-    
+
     private val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
         .build()
@@ -32,11 +33,11 @@ class CredentialStore(context: Context) : ICredentialStore {
     )
 
     override fun saveCredentials(credentials: Credentials) {
-        sharedPreferences.edit()
-            .putString(KEY_SERVER_URL, credentials.serverUrl)
-            .putString(KEY_LOGIN_NAME, credentials.loginName)
-            .putString(KEY_APP_PASSWORD, credentials.appPassword)
-            .apply()
+        sharedPreferences.edit {
+            putString(KEY_SERVER_URL, credentials.serverURL)
+                .putString(KEY_LOGIN_NAME, credentials.loginName)
+                .putString(KEY_APP_PASSWORD, credentials.appPassword)
+        }
     }
 
     override fun getCredentials(): Credentials? {

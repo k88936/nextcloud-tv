@@ -85,7 +85,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Server url: ${credentials.serverUrl}",
+                    text = "Server url: ${credentials.serverURL}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
