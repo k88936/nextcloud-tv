@@ -5,7 +5,6 @@ import io.kotlintest.specs.StringSpec
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
-import top.k88936.nextcloud.auth.PollResponse
 import top.k88936.nextcloud.mock.MockCredential
 import top.k88936.nextcloud_tv.data.local.Credentials
 import top.k88936.nextcloud_tv.data.local.ICredentialStore
@@ -66,14 +65,9 @@ class AuthRepositoryTest : StringSpec() {
             state.credentials.appPassword shouldBe MockCredential.appPassword
         }
 
-        "saveAuth should update authState to Authenticated" {
-            val pollResponse = PollResponse(
-                server = MockCredential.serverURL,
-                loginName = MockCredential.loginName,
-                appPassword = MockCredential.appPassword
-            )
+        "saveCredentials should update authState to Authenticated" {
             val repo = AuthRepository(mockCredentialStore)
-            repo.saveAuth(pollResponse)
+            repo.saveCredentials(MockCredential)
             val state = repo.authState.value
             (state is AuthState.Authenticated) shouldBe true
             state as AuthState.Authenticated

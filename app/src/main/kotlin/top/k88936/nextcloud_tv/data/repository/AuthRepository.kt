@@ -3,7 +3,6 @@ package top.k88936.nextcloud_tv.data.repository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import top.k88936.nextcloud.auth.PollResponse
 import top.k88936.nextcloud_tv.data.local.Credentials
 import top.k88936.nextcloud_tv.data.local.ICredentialStore
 
@@ -26,12 +25,7 @@ class AuthRepository(
         }
     }
 
-    override fun saveAuth(response: PollResponse) {
-        val credentials = Credentials(
-            serverURL = response.server,
-            loginName = response.loginName,
-            appPassword = response.appPassword
-        )
+    override fun saveCredentials(credentials: Credentials) {
         credentialStore.saveCredentials(credentials)
         _authState.value = AuthState.Authenticated(credentials)
     }

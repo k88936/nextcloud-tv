@@ -29,12 +29,12 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.compose.koinInject
-import top.k88936.nextcloud_tv.data.repository.AuthRepository
+import top.k88936.nextcloud_tv.data.repository.IAuthRepository
 
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    authRepository: AuthRepository = koinInject()
+    authRepository: IAuthRepository = koinInject()
 ) {
     Column(
         modifier = modifier

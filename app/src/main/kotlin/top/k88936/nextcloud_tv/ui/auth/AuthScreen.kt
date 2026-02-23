@@ -1,9 +1,6 @@
 package top.k88936.nextcloud_tv.ui.auth
 
 import android.app.Activity
-import android.graphics.Bitmap
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -31,19 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.set
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.EncodeHintType
-import com.google.zxing.qrcode.QRCodeWriter
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -55,8 +46,8 @@ fun AuthScreen(
     val activity = context as? Activity
     val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(state.authResult) {
-        if (state.authResult != null) {
+    LaunchedEffect(state.authSuccess) {
+        if (state.authSuccess) {
             onAuthSuccess()
         }
     }
@@ -71,44 +62,38 @@ fun AuthScreen(
                 .fillMaxWidth(0.6f)
                 .alpha(0.9f)
         ) {
-            BackHandler(enabled = state.step == AuthStep.QR_CODE) {
-                viewModel.goBack()
-            }
-
             Box(
                 modifier = Modifier.padding(48.dp),
                 contentAlignment = Alignment.Center
             ) {
-                when (state.step) {
-                    AuthStep.SERVER_INPUT -> ServerInputStep(
-                        serverUrl = state.serverUrl,
-                        isLoading = state.isLoading,
-                        error = state.error,
-                        onServerUrlChange = { it: String -> viewModel.updateServerUrl(it) },
-                        onInitiateLogin = { viewModel.initiateLogin() },
-                        onCancel = { activity?.finish() }
-                    )
-
-                    AuthStep.QR_CODE -> QrCodeStep(
-                        loginUrl = state.loginUrl,
-                        isLoading = state.isLoading,
-                        error = state.error,
-                        onPoll = { viewModel.pollOnce() },
-                        onCancel = { viewModel.goBack() }
-                    )
-                }
+                CredentialsInputStep(
+                    serverUrl = state.serverUrl,
+                    username = state.username,
+                    password = state.password,
+                    isLoading = state.isLoading,
+                    error = state.error,
+                    onServerUrlChange = { viewModel.updateServerUrl(it) },
+                    onUsernameChange = { viewModel.updateUsername(it) },
+                    onPasswordChange = { viewModel.updatePassword(it) },
+                    onLogin = { viewModel.login() },
+                    onCancel = { activity?.finish() }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ServerInputStep(
+private fun CredentialsInputStep(
     serverUrl: String,
+    username: String,
+    password: String,
     isLoading: Boolean,
     error: String?,
     onServerUrlChange: (String) -> Unit,
-    onInitiateLogin: () -> Unit,
+    onUsernameChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onLogin: () -> Unit,
     onCancel: () -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -122,7 +107,7 @@ private fun ServerInputStep(
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "Enter your Nextcloud server URL",
+            text = "Sign in to Nextcloud",
             color = MaterialTheme.colorScheme.inverseSurface,
             style = MaterialTheme.typography.headlineMedium,
         )
@@ -137,88 +122,55 @@ private fun ServerInputStep(
                 .focusRequester(focusRequester),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Uri,
-                imeAction = ImeAction.Go
-            ),
-            keyboardActions = KeyboardActions(
-                onGo = { if (!isLoading) onInitiateLogin() }
+                imeAction = ImeAction.Next
             ),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = MaterialTheme.colorScheme.inverseSurface,
                 unfocusedTextColor = MaterialTheme.colorScheme.inverseSurface
             ),
             singleLine = true,
-        )
-
-        if (error != null) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Button(
-                onClick = onCancel,
-                enabled = !isLoading
-            ) {
-                Text("Cancel")
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Button(
-                onClick = onInitiateLogin,
-                enabled = !isLoading && serverUrl.isNotBlank(),
-            ) {
-                Text(if (isLoading) "Connecting..." else "Continue")
-            }
-        }
-    }
-}
-
-@Composable
-private fun QrCodeStep(
-    loginUrl: String?,
-    isLoading: Boolean,
-    error: String?,
-    onPoll: () -> Unit,
-    onCancel: () -> Unit
-) {
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
-
-    val qrBitmap = remember(loginUrl) {
-        loginUrl?.let { generateQrCode(it) }
-    }
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = "Auth in your browser",
-            color = MaterialTheme.colorScheme.inverseSurface,
-            style = MaterialTheme.typography.headlineMedium,
+            placeholder = { Text("Server URL") }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (qrBitmap != null) {
-            Image(
-                bitmap = qrBitmap.asImageBitmap(),
-                contentDescription = "QR Code for login",
-                modifier = Modifier.size(256.dp)
-            )
-        }
+        OutlinedTextField(
+            value = username,
+            onValueChange = onUsernameChange,
+            modifier = Modifier.fillMaxWidth(0.8f),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.inverseSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.inverseSurface
+            ),
+            singleLine = true,
+            placeholder = { Text("Username") }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = onPasswordChange,
+            modifier = Modifier.fillMaxWidth(0.8f),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Go
+            ),
+            keyboardActions = KeyboardActions(
+                onGo = { if (!isLoading) onLogin() }
+            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.inverseSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.inverseSurface
+            ),
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            placeholder = { Text("Password") }
+        )
 
         if (error != null) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -244,35 +196,11 @@ private fun QrCodeStep(
             Spacer(modifier = Modifier.width(16.dp))
 
             Button(
-                onClick = onPoll,
-                enabled = !isLoading,
-                modifier = Modifier.focusRequester(focusRequester)
+                onClick = onLogin,
+                enabled = !isLoading && serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank(),
             ) {
-                Text(if (isLoading) "Checking..." else "I've finished auth")
+                Text(if (isLoading) "Signing in..." else "Sign in")
             }
         }
     }
-}
-
-private fun generateQrCode(content: String): Bitmap {
-    val hints = mapOf<EncodeHintType, Any>(
-        EncodeHintType.MARGIN to 1,
-        EncodeHintType.CHARACTER_SET to "UTF-8"
-    )
-
-    val writer = QRCodeWriter()
-    val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, 512, 512, hints)
-
-    val width = bitMatrix.width
-    val height = bitMatrix.height
-    val bitmap = createBitmap(width, height, Bitmap.Config.RGB_565)
-
-    for (x in 0 until width) {
-        for (y in 0 until height) {
-            bitmap[x, y] =
-                if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
-        }
-    }
-
-    return bitmap
 }
