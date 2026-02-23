@@ -21,6 +21,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.unit.dp
 
+/*
+    use this to remain focus when return from detail view
+ */
 @Composable
 fun <T : Any> FocusMaintainedLazyVerticalGrid(
     items: List<T>,
