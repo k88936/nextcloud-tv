@@ -1,7 +1,31 @@
 package top.k88936.nextcloud_tv.data.memories
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.intOrNull
+
+private object IntToBooleanSerializer : KSerializer<Boolean> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("IntToBoolean")
+
+    override fun serialize(encoder: Encoder, value: Boolean) {
+        encoder.encodeInt(if (value) 1 else 0)
+    }
+
+    override fun deserialize(decoder: Decoder): Boolean {
+        return when (val input = (decoder as JsonDecoder).decodeJsonElement()) {
+            is JsonPrimitive -> input.intOrNull == 1 || input.booleanOrNull == true
+            else -> false
+        }
+    }
+}
 
 @Serializable
 data class OcsResponse<T>(
@@ -39,14 +63,18 @@ data class Photo(
     val w: Int? = null,
     val h: Int? = null,
     @SerialName("isvideo")
+    @Serializable(with = IntToBooleanSerializer::class)
     val isVideo: Boolean? = null,
     @SerialName("video_duration")
     val videoDuration: Int? = null,
     @SerialName("isfavorite")
+    @Serializable(with = IntToBooleanSerializer::class)
     val isFavorite: Boolean? = null,
     @SerialName("islocal")
+    @Serializable(with = IntToBooleanSerializer::class)
     val isLocal: Boolean? = null,
     @SerialName("ishidden")
+    @Serializable(with = IntToBooleanSerializer::class)
     val isHidden: Boolean? = null,
     val liveid: String? = null,
     val shared_by: String? = null,

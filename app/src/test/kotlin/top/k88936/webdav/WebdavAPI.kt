@@ -11,7 +11,7 @@ import io.ktor.client.request.header
 import io.ktor.serialization.kotlinx.xml.xml
 import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.serialization.XML
-import top.k88936.nextcloud.TestCredential
+import top.k88936.nextcloud.mock.MockCredential
 
 class WebdavAPI : ShouldSpec() {
     private val client = HttpClient {
@@ -19,8 +19,8 @@ class WebdavAPI : ShouldSpec() {
             basic {
                 credentials {
                     BasicAuthCredentials(
-                        TestCredential.loginName,
-                        TestCredential.appPassword
+                        MockCredential.loginName,
+                        MockCredential.appPassword
                     )
                 }
             }
@@ -36,7 +36,7 @@ class WebdavAPI : ShouldSpec() {
     }
 
     private val webDavUrl =
-        TestCredential.serverURL + "/remote.php/dav/files/${TestCredential.loginName}"
+        MockCredential.serverURL + "/remote.php/dav/files/${MockCredential.loginName}"
 
     init {
         should("list root folder") {

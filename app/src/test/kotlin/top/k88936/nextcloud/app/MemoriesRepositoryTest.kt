@@ -1,36 +1,25 @@
-package top.k88936.nextcloud_tv.data.memories
+package top.k88936.nextcloud.app
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import top.k88936.nextcloud.TestCredential
-import top.k88936.nextcloud.auth.PollResponse
-import top.k88936.nextcloud_tv.data.local.Credentials
+import io.ktor.client.plugins.cookies.cookies
+import top.k88936.nextcloud.mock.MockAuthRepository
+import top.k88936.nextcloud.mock.MockCredential
+import top.k88936.nextcloud_tv.data.memories.convertFlags
 import top.k88936.nextcloud_tv.data.network.NextcloudClient
-import top.k88936.nextcloud_tv.data.repository.AuthState
-import top.k88936.nextcloud_tv.data.repository.IAuthRepository
-
-class TestAuthRepository(
-    private val credentials: Credentials
-) : IAuthRepository {
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Authenticated(credentials))
-    override val authState: StateFlow<AuthState> = _authState
-
-    override fun saveAuth(response: PollResponse) {}
-    override fun logout() {}
-    override fun getCredentials(): Credentials = credentials
-}
 
 class MemoriesRepositoryTest : ShouldSpec() {
-    private val credentials = TestCredential
+    private val credentials = MockCredential
 
-    private val authRepository = TestAuthRepository(credentials)
+    private val authRepository =
+        MockAuthRepository(credentials)
     private val nextcloudClient = NextcloudClient(authRepository)
-    private val repository = MemoriesRepository(nextcloudClient)
+    private val repository =
+        _root_ide_package_.top.k88936.nextcloud_tv.data.memories.MemoriesRepository(nextcloudClient)
 
     init {
         should("getDays returns list of days") {
+            println(nextcloudClient.getClient()?.cookies(credentials.serverURL))
             val result = repository.getDays()
             result.isSuccess shouldBe true
             val days = result.getOrThrow()
@@ -39,7 +28,8 @@ class MemoriesRepositoryTest : ShouldSpec() {
         }
 
         should("getDays with favorites filter") {
-            val result = repository.getDays(mapOf(DaysFilterType.FAVORITES.key to "1"))
+            val result =
+                repository.getDays(mapOf(_root_ide_package_.top.k88936.nextcloud_tv.data.memories.DaysFilterType.FAVORITES.key to "1"))
             result.isSuccess shouldBe true
             val days = result.getOrThrow()
             println("Found ${days.size} days with favorites:")
@@ -47,7 +37,8 @@ class MemoriesRepositoryTest : ShouldSpec() {
         }
 
         should("getDays with videos filter") {
-            val result = repository.getDays(mapOf(DaysFilterType.VIDEOS.key to "1"))
+            val result =
+                repository.getDays(mapOf(_root_ide_package_.top.k88936.nextcloud_tv.data.memories.DaysFilterType.VIDEOS.key to "1"))
             result.isSuccess shouldBe true
             val days = result.getOrThrow()
             println("Found ${days.size} days with videos:")
@@ -172,16 +163,16 @@ class MemoriesRepositoryTest : ShouldSpec() {
         }
 
         should("Photo.convertFlags sets correct flags") {
-            val photo = Photo(
+            val photo = _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo(
                 fileid = 1,
                 isVideo = true,
                 isFavorite = true,
                 isLocal = true
             ).convertFlags()
 
-            (photo.flag and Photo.FLAG_IS_VIDEO) shouldBe Photo.FLAG_IS_VIDEO
-            (photo.flag and Photo.FLAG_IS_FAVORITE) shouldBe Photo.FLAG_IS_FAVORITE
-            (photo.flag and Photo.FLAG_IS_LOCAL) shouldBe Photo.FLAG_IS_LOCAL
+            (photo.flag and _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_VIDEO) shouldBe _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_VIDEO
+            (photo.flag and _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_FAVORITE) shouldBe _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_FAVORITE
+            (photo.flag and _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_LOCAL) shouldBe _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_LOCAL
             println("Flags correctly converted: ${photo.flag}")
         }
     }

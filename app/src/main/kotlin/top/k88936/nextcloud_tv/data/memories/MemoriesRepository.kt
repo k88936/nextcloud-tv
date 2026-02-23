@@ -24,7 +24,7 @@ class MemoriesRepository(
 ) {
     private companion object {
         private const val TAG = "MemoriesRepository"
-        private const val BASE_PATH = "/ocs/v2.php/apps/memories/api"
+        private const val BASE_PATH = "/apps/memories/api"
     }
 
     suspend fun getDays(filters: Map<String, String> = emptyMap()): Result<List<Day>> {
