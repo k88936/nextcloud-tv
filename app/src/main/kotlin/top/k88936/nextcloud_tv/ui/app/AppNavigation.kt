@@ -31,7 +31,9 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import androidx.tv.material3.rememberDrawerState
+import top.k88936.nextcloud_tv.ui.Icon.Memories
 import top.k88936.nextcloud_tv.ui.app.files.FilesScreen
+import top.k88936.nextcloud_tv.ui.app.memories.MemoriesScreen
 import top.k88936.nextcloud_tv.ui.app.settings.SettingsScreen
 
 object ScreensConfig {
@@ -47,13 +49,20 @@ object ScreensConfig {
         icon = Icons.Filled.Files
     )
 
+    data object Memories : Screen(
+        route = "memories",
+        title = "Memories",
+        icon = Icons.Filled.Memories
+    )
+
+
     data object Settings : Screen(
         route = "settings",
         title = "Settings",
         icon = Icons.Filled.Settings2
     )
 
-    val items = listOf(Files, Settings)
+    val items = listOf(Files, Memories, Settings)
     val startDestination = Files
 }
 @Composable
@@ -118,6 +127,9 @@ fun AppNavigation(
             ) {
                 composable(ScreensConfig.Files.route) {
                     FilesScreen()
+                }
+                composable(ScreensConfig.Memories.route) {
+                    MemoriesScreen()
                 }
                 composable(ScreensConfig.Settings.route) {
                     SettingsScreen()

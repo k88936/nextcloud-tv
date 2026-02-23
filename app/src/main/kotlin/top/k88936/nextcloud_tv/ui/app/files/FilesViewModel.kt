@@ -9,14 +9,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import top.k88936.nextcloud_tv.data.repository.AuthRepository
 import top.k88936.nextcloud_tv.data.repository.AuthState
 import top.k88936.nextcloud_tv.data.repository.FilesRepository
 import top.k88936.nextcloud_tv.data.repository.FilesState
+import top.k88936.nextcloud_tv.data.repository.IAuthRepository
 import top.k88936.webdav.FileMetadata
 
 class FilesViewModel(
-    private val authRepository: AuthRepository,
+    private val authRepository: IAuthRepository,
     val filesRepository: FilesRepository
 ) : ViewModel() {
 

@@ -20,10 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
@@ -38,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,7 +44,6 @@ import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -62,6 +57,7 @@ import top.k88936.nextcloud_tv.ui.Icon.filetypes.Image
 import top.k88936.nextcloud_tv.ui.Icon.filetypes.Pdf
 import top.k88936.nextcloud_tv.ui.Icon.filetypes.Text
 import top.k88936.nextcloud_tv.ui.Icon.filetypes.Video
+import top.k88936.nextcloud_tv.ui.components.FocusMaintainedLazyVerticalGrid
 import top.k88936.webdav.FileMetadata
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -96,44 +92,37 @@ fun FilesScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Surface(
+        Row(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface)
-                .alpha(0.8f),
-            shape = RoundedCornerShape(16.dp)
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (canGoBack) {
-                    Spacer(modifier = Modifier.width(16.dp))
-                    IconButton(
-                        onClick = { viewModel.navigateUp() },
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+            if (canGoBack) {
+                Spacer(modifier = Modifier.width(16.dp))
+                IconButton(
+                    onClick = { viewModel.navigateUp() },
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = "Files",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.width(32.dp))
-                Text(
-                    text = state.currentPath,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.alpha(0.7f)
-                )
             }
+            Text(
+                text = "Files",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.width(32.dp))
+            Text(
+                text = state.currentPath,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.alpha(0.7f)
+            )
         }
 
         Box(
@@ -181,8 +170,16 @@ fun FilesScreen(
                 }
 
                 state.files.isNotEmpty() -> {
-                    LazyVerticalGrid(
-                        state = gridState,
+                    FocusMaintainedLazyVerticalGrid(
+                        items = state.files,
+                        key = { it.path },
+                        focusedItemId = viewModel.focusedItemId,
+                        onFocusChanged = { file, isFocused ->
+                            if (isFocused) {
+                                viewModel.updateFocusedItemId(file.path)
+                            }
+                        },
+                        gridState = gridState,
                         columns = GridCells.Adaptive(minSize = 128.dp),
                         modifier = Modifier
                             .fillMaxSize()
@@ -190,27 +187,14 @@ fun FilesScreen(
                         contentPadding = PaddingValues(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(state.files, key = { it.path }) { file ->
-                            val focusRequester = remember { FocusRequester() }
-                            LaunchedEffect(file.path) {
-                                if (file.path == viewModel.focusedItemId) {
-                                    focusRequester.requestFocus()
-                                }
-                            }
-                            FileCard(
-                                file = file,
-                                filesRepository = viewModel.filesRepository,
-                                focusRequester = focusRequester,
-                                isFocusedTarget = file.path == viewModel.focusedItemId,
-                                onFocusChanged = { isFocused ->
-                                    if (isFocused) {
-                                        viewModel.updateFocusedItemId(file.path)
-                                    }
-                                },
-                                onSelect = { handleSelectFile(file) }
-                            )
-                        }
+                    ) { file, itemFocusRequester, isFocused ->
+                        FileCard(
+                            file = file,
+                            filesRepository = viewModel.filesRepository,
+                            focusRequester = itemFocusRequester,
+                            isFocused = isFocused,
+                            onSelect = { handleSelectFile(file) }
+                        )
                     }
                 }
             }
@@ -234,18 +218,10 @@ private fun FileCard(
     file: FileMetadata,
     filesRepository: FilesRepository,
     focusRequester: FocusRequester,
-    isFocusedTarget: Boolean,
-    onFocusChanged: (Boolean) -> Unit,
+    isFocused: Boolean,
     onSelect: () -> Unit,
 ) {
-    var isFocused by remember { mutableStateOf(false) }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
-
-    LaunchedEffect(isFocusedTarget) {
-        if (isFocusedTarget) {
-            focusRequester.requestFocus()
-        }
-    }
 
     LaunchedEffect(file.path) {
         if (!file.isDirectory) {
@@ -267,11 +243,7 @@ private fun FileCard(
         onClick = onSelect,
         modifier = Modifier
             .aspectRatio(1f)
-            .focusRequester(focusRequester)
-            .onFocusEvent { focusState ->
-                isFocused = focusState.hasFocus
-                onFocusChanged(focusState.hasFocus)
-            },
+            .focusRequester(focusRequester),
         colors = CardDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )

@@ -21,8 +21,8 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
-import top.k88936.nextcloud_tv.data.repository.AuthRepository
 import top.k88936.nextcloud_tv.data.repository.AuthState
+import top.k88936.nextcloud_tv.data.repository.IAuthRepository
 import top.k88936.nextcloud_tv.di.appModules
 import top.k88936.nextcloud_tv.navigation.LocalNavController
 import top.k88936.nextcloud_tv.ui.app.AppNavigation
@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 val navController = rememberNavController()
-                val authRepository: AuthRepository = koinInject()
+                val authRepository: IAuthRepository = koinInject()
                 val authState by authRepository.authState.collectAsState()
 
                 LaunchedEffect(authState) {

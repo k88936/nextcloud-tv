@@ -1,57 +1,19 @@
-package top.k88936.nextcloud_tv.data.memories
+package top.k88936.nextcloud_tv.data.model
 
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.intOrNull
 
-private object IntToBooleanSerializer : KSerializer<Boolean> {
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("IntToBoolean")
-
-    override fun serialize(encoder: Encoder, value: Boolean) {
-        encoder.encodeInt(if (value) 1 else 0)
-    }
-
-    override fun deserialize(decoder: Decoder): Boolean {
-        return when (val input = (decoder as JsonDecoder).decodeJsonElement()) {
-            is JsonPrimitive -> input.intOrNull == 1 || input.booleanOrNull == true
-            else -> false
-        }
-    }
-}
-
-@Serializable
-data class OcsResponse<T>(
-    val ocs: OcsData<T>
-)
-
-@Serializable
-data class OcsData<T>(
-    val meta: OcsMeta,
-    val data: T
-)
-
-@Serializable
-data class OcsMeta(
-    val status: String? = null,
-    val statuscode: Int? = null,
-    val message: String? = null
-)
 
 @Serializable
 data class Day(
     val dayid: Int,
     val count: Int,
     val detail: List<Photo>? = null,
-    val haslocal: Boolean? = null
-)
+    @SerialName("haslocal")
+    private val _hasLocal: Int? = null
+) {
+    val hasLocal: Boolean get() = _hasLocal == 1
+}
 
 @Serializable
 data class Photo(
@@ -63,19 +25,15 @@ data class Photo(
     val w: Int? = null,
     val h: Int? = null,
     @SerialName("isvideo")
-    @Serializable(with = IntToBooleanSerializer::class)
-    val isVideo: Boolean? = null,
+    private val _isVideo: Int? = null,
     @SerialName("video_duration")
     val videoDuration: Int? = null,
     @SerialName("isfavorite")
-    @Serializable(with = IntToBooleanSerializer::class)
-    val isFavorite: Boolean? = null,
+    private val _isFavorite: Int? = null,
     @SerialName("islocal")
-    @Serializable(with = IntToBooleanSerializer::class)
-    val isLocal: Boolean? = null,
+    private val _isLocal: Int? = null,
     @SerialName("ishidden")
-    @Serializable(with = IntToBooleanSerializer::class)
-    val isHidden: Boolean? = null,
+    private val _isHidden: Int? = null,
     val liveid: String? = null,
     val shared_by: String? = null,
     val faceid: Int? = null,
@@ -85,6 +43,11 @@ data class Photo(
     val epoch: Long? = null
 ) {
     var flag: Int = 0
+
+    val isVideo: Boolean get() = _isVideo == 1
+    val isFavorite: Boolean get() = _isFavorite == 1
+    val isLocal: Boolean get() = _isLocal == 1
+    val isHidden: Boolean get() = _isHidden == 1
 
     companion object {
         const val FLAG_PLACEHOLDER = 1 shl 0
@@ -98,9 +61,9 @@ data class Photo(
 }
 
 fun Photo.convertFlags(): Photo {
-    if (isVideo == true) flag = flag or Photo.FLAG_IS_VIDEO
-    if (isFavorite == true) flag = flag or Photo.FLAG_IS_FAVORITE
-    if (isLocal == true) flag = flag or Photo.FLAG_IS_LOCAL
+    if (isVideo) flag = flag or Photo.FLAG_IS_VIDEO
+    if (isFavorite) flag = flag or Photo.FLAG_IS_FAVORITE
+    if (isLocal) flag = flag or Photo.FLAG_IS_LOCAL
     return this
 }
 

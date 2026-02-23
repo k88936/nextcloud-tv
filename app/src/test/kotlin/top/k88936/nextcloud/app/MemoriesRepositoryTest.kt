@@ -5,8 +5,11 @@ import io.kotlintest.specs.ShouldSpec
 import io.ktor.client.plugins.cookies.cookies
 import top.k88936.nextcloud.mock.MockAuthRepository
 import top.k88936.nextcloud.mock.MockCredential
-import top.k88936.nextcloud_tv.data.memories.convertFlags
+import top.k88936.nextcloud_tv.data.model.DaysFilterType
+import top.k88936.nextcloud_tv.data.model.Photo
+import top.k88936.nextcloud_tv.data.model.convertFlags
 import top.k88936.nextcloud_tv.data.network.NextcloudClient
+import top.k88936.nextcloud_tv.data.repository.MemoriesRepository
 
 class MemoriesRepositoryTest : ShouldSpec() {
     private val credentials = MockCredential
@@ -14,8 +17,7 @@ class MemoriesRepositoryTest : ShouldSpec() {
     private val authRepository =
         MockAuthRepository(credentials)
     private val nextcloudClient = NextcloudClient(authRepository)
-    private val repository =
-        _root_ide_package_.top.k88936.nextcloud_tv.data.memories.MemoriesRepository(nextcloudClient)
+    private val repository = MemoriesRepository(nextcloudClient)
 
     init {
         should("getDays returns list of days") {
@@ -29,7 +31,7 @@ class MemoriesRepositoryTest : ShouldSpec() {
 
         should("getDays with favorites filter") {
             val result =
-                repository.getDays(mapOf(_root_ide_package_.top.k88936.nextcloud_tv.data.memories.DaysFilterType.FAVORITES.key to "1"))
+                repository.getDays(mapOf(DaysFilterType.FAVORITES.key to "1"))
             result.isSuccess shouldBe true
             val days = result.getOrThrow()
             println("Found ${days.size} days with favorites:")
@@ -38,7 +40,7 @@ class MemoriesRepositoryTest : ShouldSpec() {
 
         should("getDays with videos filter") {
             val result =
-                repository.getDays(mapOf(_root_ide_package_.top.k88936.nextcloud_tv.data.memories.DaysFilterType.VIDEOS.key to "1"))
+                repository.getDays(mapOf(DaysFilterType.VIDEOS.key to "1"))
             result.isSuccess shouldBe true
             val days = result.getOrThrow()
             println("Found ${days.size} days with videos:")
@@ -163,17 +165,57 @@ class MemoriesRepositoryTest : ShouldSpec() {
         }
 
         should("Photo.convertFlags sets correct flags") {
-            val photo = _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo(
+            val photo = Photo(
                 fileid = 1,
-                isVideo = true,
-                isFavorite = true,
-                isLocal = true
+                _isVideo = 1,
+                _isFavorite = 1,
+                _isLocal = 1
             ).convertFlags()
 
-            (photo.flag and _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_VIDEO) shouldBe _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_VIDEO
-            (photo.flag and _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_FAVORITE) shouldBe _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_FAVORITE
-            (photo.flag and _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_LOCAL) shouldBe _root_ide_package_.top.k88936.nextcloud_tv.data.memories.Photo.Companion.FLAG_IS_LOCAL
+            (photo.flag and Photo.Companion.FLAG_IS_VIDEO) shouldBe Photo.Companion.FLAG_IS_VIDEO
+            (photo.flag and Photo.Companion.FLAG_IS_FAVORITE) shouldBe Photo.Companion.FLAG_IS_FAVORITE
+            (photo.flag and Photo.Companion.FLAG_IS_LOCAL) shouldBe Photo.Companion.FLAG_IS_LOCAL
             println("Flags correctly converted: ${photo.flag}")
+        }
+
+        should("getOnThisDay returns photos from past years") {
+            val result = repository.getOnThisDay()
+            result.isSuccess shouldBe true
+            val photos = result.getOrThrow()
+            println("Found ${photos.size} photos from 'On This Day'")
+
+            if (photos.isNotEmpty()) {
+                println("Sample photos:")
+                photos.take(5).forEach { photo ->
+                    println("  - ${photo.basename} (dayid: ${photo.dayid}, ${photo.w}x${photo.h})")
+                }
+            } else {
+                println("No photos found for 'On This Day'")
+            }
+        }
+
+        should("getOnThisDay photos have valid dayid") {
+            val result = repository.getOnThisDay()
+            result.isSuccess shouldBe true
+            val photos = result.getOrThrow()
+
+            if (photos.isNotEmpty()) {
+                val allHaveDayId = photos.all { it.dayid != null && it.dayid > 0 }
+                allHaveDayId shouldBe true
+                println("All ${photos.size} photos have valid dayid")
+            }
+        }
+
+        should("getOnThisDay filters out hidden photos and videos") {
+            val result = repository.getOnThisDay()
+            result.isSuccess shouldBe true
+            val photos = result.getOrThrow()
+
+            val visiblePhotos = photos.filter { !it.isHidden }
+            println("Visible photos: ${visiblePhotos.size} of ${photos.size}")
+
+            val videos = photos.filter { it.isVideo }
+            println("Videos found: ${videos.size}")
         }
     }
 }

@@ -11,7 +11,7 @@ import top.k88936.nextcloud_tv.data.repository.FilesRepository
 import top.k88936.nextcloud_tv.data.repository.IAuthRepository
 import top.k88936.nextcloud_tv.data.repository.MemoriesRepository
 import top.k88936.nextcloud_tv.ui.app.files.FilesViewModel
-import top.k88936.nextcloud_tv.ui.app.timeline.TimelineViewModel
+import top.k88936.nextcloud_tv.ui.app.memories.TimelineViewModel
 import top.k88936.nextcloud_tv.ui.auth.AuthViewModel
 
 val dataModule = module {

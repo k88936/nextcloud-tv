@@ -1,4 +1,4 @@
-package top.k88936.nextcloud_tv.data.memories
+package top.k88936.nextcloud_tv.data.repository
 
 import android.util.Log
 import io.ktor.client.call.body
@@ -11,13 +11,13 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.contentType
 import io.ktor.http.set
 import kotlinx.serialization.Serializable
+import top.k88936.nextcloud_tv.data.local.Credentials
+import top.k88936.nextcloud_tv.data.model.Day
+import top.k88936.nextcloud_tv.data.model.ImageInfo
+import top.k88936.nextcloud_tv.data.model.Photo
+import top.k88936.nextcloud_tv.data.model.convertFlags
 import top.k88936.nextcloud_tv.data.network.NextcloudClient
-
-data class MemoriesState(
-    val days: List<Day> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
+import java.util.TimeZone
 
 class MemoriesRepository(
     private val nextcloudClient: NextcloudClient
@@ -154,7 +154,7 @@ class MemoriesRepository(
     }
 
     fun buildDaysUrl(
-        credentials: top.k88936.nextcloud_tv.data.local.Credentials,
+        credentials: Credentials,
         filters: Map<String, String> = emptyMap()
     ): String {
         return URLBuilder(credentials.serverURL).apply {
@@ -166,7 +166,7 @@ class MemoriesRepository(
     }
 
     fun buildDayUrl(
-        credentials: top.k88936.nextcloud_tv.data.local.Credentials,
+        credentials: Credentials,
         dayIds: List<Int>,
         filters: Map<String, String> = emptyMap()
     ): String {
@@ -179,7 +179,7 @@ class MemoriesRepository(
     }
 
     fun buildPreviewUrl(
-        credentials: top.k88936.nextcloud_tv.data.local.Credentials,
+        credentials: Credentials,
         fileid: Int,
         etag: String? = null
     ): String {
@@ -187,5 +187,53 @@ class MemoriesRepository(
             set(path = "$BASE_PATH/image/preview/$fileid")
             etag?.let { parameters.append("etag", it) }
         }.buildString()
+    }
+
+    suspend fun getOnThisDay(): Result<List<Photo>> {
+        Log.d(TAG, "getOnThisDay: calculating dayIds")
+        val client = nextcloudClient.getClient()
+            ?: return Result.failure(IllegalStateException("Not authenticated"))
+        val credentials = nextcloudClient.getCredentials()
+            ?: return Result.failure(IllegalStateException("Not authenticated"))
+
+        val dayIds = calculateOnThisDayIds()
+        Log.d(TAG, "getOnThisDay: ${dayIds.size} dayIds calculated")
+
+        return runCatching {
+            val url = URLBuilder(credentials.serverURL).apply {
+                set(path = "$BASE_PATH/days")
+            }.buildString()
+
+            @Serializable
+            data class DaysRequest(val dayIds: List<Int>)
+
+            Log.d(TAG, "getOnThisDay: requesting $url")
+            val response = client.post(url) {
+                contentType(ContentType.Application.Json)
+                setBody(DaysRequest(dayIds))
+            }
+            val photos = response.body<List<Photo>>().map { it.convertFlags() }
+            Log.d(TAG, "getOnThisDay: success, found ${photos.size} photos")
+            photos
+        }.onFailure { error ->
+            Log.e(TAG, "getOnThisDay: failed - ${error.message}", error)
+        }
+    }
+
+    private fun calculateOnThisDayIds(): List<Int> {
+        val dayIds = mutableListOf<Int>()
+        val now = System.currentTimeMillis()
+        val nowUTC = now - TimeZone.getDefault().getOffset(now)
+
+        for (i in 1..120) {
+            for (j in -3..3) {
+                val offsetMillis =
+                    (i.toLong() * 365L * 24L * 60L * 60L * 1000L) + (j.toLong() * 24L * 60L * 60L * 1000L)
+                val targetTime = nowUTC - offsetMillis
+                val dayId = (targetTime / (24L * 60L * 60L * 1000L)).toInt()
+                dayIds.add(dayId)
+            }
+        }
+        return dayIds
     }
 }
