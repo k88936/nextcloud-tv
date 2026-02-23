@@ -9,7 +9,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.xml.xml
 import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.serialization.XML
-import top.k88936.nextcloud.app.CredentialMock
+import top.k88936.nextcloud.CredentialMock
 
 class WebdavAPI : ShouldSpec() {
     private val client = HttpClient {

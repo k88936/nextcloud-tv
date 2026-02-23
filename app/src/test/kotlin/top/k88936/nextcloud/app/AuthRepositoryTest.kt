@@ -5,6 +5,7 @@ import io.kotlintest.specs.StringSpec
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
+import top.k88936.nextcloud.CredentialMock
 import top.k88936.nextcloud.auth.PollResponse
 import top.k88936.nextcloud_tv.data.local.Credentials
 import top.k88936.nextcloud_tv.data.local.ICredentialStore
