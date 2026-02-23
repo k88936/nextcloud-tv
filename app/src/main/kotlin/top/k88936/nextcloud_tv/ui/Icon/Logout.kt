@@ -1,11 +1,8 @@
 package androidx.compose.material.icons.filled
 
-import android.graphics.drawable.Icon
 import androidx.compose.material.icons.Icons
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.material.icons.materialPath
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
 val Icons.Filled.Logout: ImageVector
@@ -20,7 +17,7 @@ val Icons.Filled.Logout: ImageVector
             viewportWidth = 16f,
             viewportHeight = 16f
         ).apply {
-            path(fill = SolidColor(Color(0xFF000000))) {
+            materialPath {
                 moveTo(2.556f, 15f)
                 curveToRelative(-0.428f, 0f, -0.794f, -0.152f, -1.098f, -0.457f)
                 arcTo(1.499f, 1.499f, 45f, isMoreThanHalf = false, isPositiveArc = true, 1f, 13.445f)

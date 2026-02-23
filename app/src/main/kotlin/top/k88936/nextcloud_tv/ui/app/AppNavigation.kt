@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Files
+import androidx.compose.material.icons.filled.Settings2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -14,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,10 +32,30 @@ import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import androidx.tv.material3.rememberDrawerState
 import top.k88936.nextcloud_tv.ui.app.files.FilesScreen
-import top.k88936.nextcloud_tv.ui.app.music.MusicScreen
-import top.k88936.nextcloud_tv.ui.app.photos.PhotosScreen
 import top.k88936.nextcloud_tv.ui.app.settings.SettingsScreen
 
+object ScreensConfig {
+    sealed class Screen(
+        val route: String,
+        val title: String,
+        val icon: ImageVector
+    )
+
+    data object Files : Screen(
+        route = "files",
+        title = "Files",
+        icon = Icons.Filled.Files
+    )
+
+    data object Settings : Screen(
+        route = "settings",
+        title = "Settings",
+        icon = Icons.Filled.Settings2
+    )
+
+    val items = listOf(Files, Settings)
+    val startDestination = Files
+}
 @Composable
 fun AppNavigation(
     modifier: Modifier = Modifier
@@ -52,13 +76,13 @@ fun AppNavigation(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Screens.items.forEachIndexed { index, screen ->
+                ScreensConfig.items.forEachIndexed { index, screen ->
                     NavigationDrawerItem(
                         selected = selectedIndex == index,
                         onClick = {
                             selectedIndex = index
-                            innerNavController.navigate(Screens.items[index].route) {
-                                popUpTo(Screens.startDestination.route) {
+                            innerNavController.navigate(ScreensConfig.items[index].route) {
+                                popUpTo(ScreensConfig.startDestination.route) {
                                     saveState = true
                                 }
                                 launchSingleTop = true
@@ -90,18 +114,12 @@ fun AppNavigation(
 
             NavHost(
                 navController = innerNavController,
-                startDestination = Screens.startDestination.route
+                startDestination = ScreensConfig.startDestination.route
             ) {
-                composable(Screens.Files.route) {
+                composable(ScreensConfig.Files.route) {
                     FilesScreen()
                 }
-                composable(Screens.Photos.route) {
-                    PhotosScreen()
-                }
-                composable(Screens.Music.route) {
-                    MusicScreen()
-                }
-                composable(Screens.Settings.route) {
+                composable(ScreensConfig.Settings.route) {
                     SettingsScreen()
                 }
             }

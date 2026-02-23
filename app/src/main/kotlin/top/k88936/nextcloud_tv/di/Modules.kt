@@ -10,7 +10,6 @@ import top.k88936.nextcloud_tv.data.network.NextcloudClient
 import top.k88936.nextcloud_tv.data.repository.AuthRepository
 import top.k88936.nextcloud_tv.data.repository.FilesRepository
 import top.k88936.nextcloud_tv.ui.app.files.FilesViewModel
-import top.k88936.nextcloud_tv.ui.app.photos.PhotosViewModel
 import top.k88936.nextcloud_tv.ui.auth.AuthViewModel
 
 val dataModule = module {
@@ -23,7 +22,6 @@ val dataModule = module {
 val viewModelModule = module {
     viewModel { AuthViewModel(get()) }
     viewModel { FilesViewModel(get(), get()) }
-    viewModel { PhotosViewModel(get(), get()) }
 }
 
 val appModules = listOf(dataModule, viewModelModule)
