@@ -5,7 +5,6 @@ import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -128,7 +127,6 @@ fun FilesScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .focusable()
                 .focusRequester(focusRequester)
         ) {
             val gridState = rememberLazyGridState()
