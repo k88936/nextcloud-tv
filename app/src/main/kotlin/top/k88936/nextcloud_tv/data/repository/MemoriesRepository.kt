@@ -11,7 +11,6 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.contentType
 import io.ktor.http.set
 import kotlinx.serialization.Serializable
-import top.k88936.nextcloud_tv.data.local.Credentials
 import top.k88936.nextcloud_tv.data.model.Day
 import top.k88936.nextcloud_tv.data.model.ImageInfo
 import top.k88936.nextcloud_tv.data.model.Photo
@@ -89,6 +88,8 @@ class MemoriesRepository(
         return runCatching {
             val url = URLBuilder(credentials.serverURL).apply {
                 set(path = "$BASE_PATH/image/preview/$fileid")
+                parameters.append("x", "256")
+                parameters.append("y", "256")
                 etag?.let { parameters.append("etag", it) }
             }.buildString()
 
@@ -99,34 +100,6 @@ class MemoriesRepository(
             bytes
         }.onFailure { error ->
             Log.e(TAG, "getPreview: failed - ${error.message}", error)
-        }
-    }
-
-    suspend fun getMultiPreview(fileids: List<Int>): Result<ByteArray> {
-        Log.d(TAG, "getMultiPreview: fileids=${fileids.size}")
-        val client = clientRepository.getClient()
-            ?: return Result.failure(IllegalStateException("Not authenticated"))
-        val credentials = clientRepository.getCredentials()
-            ?: return Result.failure(IllegalStateException("Not authenticated"))
-
-        return runCatching {
-            val url = URLBuilder(credentials.serverURL).apply {
-                set(path = "$BASE_PATH/image/multipreview")
-            }.buildString()
-
-            @Serializable
-            data class MultiPreviewRequest(val fileids: List<Int>)
-
-            Log.d(TAG, "getMultiPreview: requesting $url")
-            val response = client.post(url) {
-                contentType(ContentType.Application.Json)
-                setBody(MultiPreviewRequest(fileids))
-            }
-            val bytes = response.bodyAsBytes()
-            Log.d(TAG, "getMultiPreview: success, received ${bytes.size} bytes")
-            bytes
-        }.onFailure { error ->
-            Log.e(TAG, "getMultiPreview: failed - ${error.message}", error)
         }
     }
 
@@ -152,54 +125,13 @@ class MemoriesRepository(
         }
     }
 
-    private fun buildDaysUrl(
-        credentials: Credentials,
-        filters: Map<String, String> = emptyMap()
-    ): String {
-        return URLBuilder(credentials.serverURL).apply {
-            set(path = "$BASE_PATH/days")
-            filters.forEach { (key, value) ->
-                parameters.append(key, value)
-            }
-        }.buildString()
-    }
-
-    private fun buildDayUrl(
-        credentials: Credentials,
-        dayIds: List<Int>,
-        filters: Map<String, String> = emptyMap()
-    ): String {
-        return URLBuilder(credentials.serverURL).apply {
-            set(path = "$BASE_PATH/days/${dayIds.joinToString(",")}")
-            filters.forEach { (key, value) ->
-                parameters.append(key, value)
-            }
-        }.buildString()
-    }
-
-    private fun buildPreviewUrl(
-        credentials: Credentials,
-        fileid: Int,
-        etag: String? = null
-    ): String {
-        return URLBuilder(credentials.serverURL).apply {
-            set(path = "$BASE_PATH/image/preview/$fileid")
-            etag?.let { parameters.append("etag", it) }
-        }.buildString()
-    }
-
-    private fun buildFullImageUrl(
-        credentials: Credentials,
-        fileid: Int
-    ): String {
-        return URLBuilder(credentials.serverURL).apply {
-            set(path = "$BASE_PATH/image/$fileid")
-        }.buildString()
-    }
-
-    fun getFullImageUrl(fileid: Int): String? {
+    fun getFullImageUrl(meta: Photo): String? {
         val credentials = clientRepository.getCredentials() ?: return null
-        return buildFullImageUrl(credentials, fileid)
+        return URLBuilder(credentials.serverURL).apply {
+            set(path = "${BASE_PATH}/image/preview/${meta.fileid}")
+            parameters.append("x", "${meta.w}")
+            parameters.append("y", "${meta.h}")
+        }.buildString()
     }
 
     suspend fun getOnThisDay(): Result<List<Photo>> {
