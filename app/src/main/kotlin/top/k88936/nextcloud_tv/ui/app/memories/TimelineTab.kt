@@ -55,15 +55,11 @@ import top.k88936.nextcloud_tv.data.model.Day as MemoriesDay
 import top.k88936.nextcloud_tv.data.model.Photo as MemoriesPhoto
 
 sealed class TimelineRow {
-    data class HeaderRow(
-        val dayId: Int,
-        val dayName: String,
-        val count: Int
-    ) : TimelineRow()
-
-    data class PhotoRow(
+    data class DayRow(
         val photos: List<MemoriesPhoto>,
         val dayId: Int,
+        val dayName: String? = null,
+        val photoCount: Int = 0,
         val rowHeight: Int = 200
     ) : TimelineRow()
 }
@@ -116,8 +112,7 @@ fun TimelineTab(
                     onFocusChanged = { row, isFocused ->
                         if (isFocused) {
                             val key = when (row) {
-                                is TimelineRow.HeaderRow -> "header-${row.dayId}"
-                                is TimelineRow.PhotoRow -> "photo-row-${row.dayId}-${row.photos.firstOrNull()?.fileid}"
+                                is TimelineRow.DayRow -> "day-row-${row.dayId}-${row.photos.firstOrNull()?.fileid}"
                             }
                             viewModel.updateFocusedItemId(key)
                         }
@@ -162,20 +157,16 @@ private fun TimelineContent(
             val photos = photosByDay[day.dayid] ?: continue
             if (photos.isEmpty()) continue
 
-            rows.add(
-                TimelineRow.HeaderRow(
-                    dayId = day.dayid,
-                    dayName = getHeadRowName(day.dayid),
-                    count = photos.size
-                )
-            )
-
             val sortedPhotos = photos.sortedByDescending { it.epoch }
-            sortedPhotos.chunked(numCols).forEach { photoChunk ->
+            val chunks = sortedPhotos.chunked(numCols)
+
+            chunks.forEachIndexed { index, photoChunk ->
                 rows.add(
-                    TimelineRow.PhotoRow(
+                    TimelineRow.DayRow(
                         photos = photoChunk,
                         dayId = day.dayid,
+                        dayName = if (index == 0) getHeadRowName(day.dayid) else null,
+                        photoCount = if (index == 0) photos.size else 0,
                         rowHeight = rowHeight.value.toInt()
                     )
                 )
@@ -189,8 +180,7 @@ private fun TimelineContent(
             items = timelineRows,
             key = { row ->
                 when (row) {
-                    is TimelineRow.HeaderRow -> "header-${row.dayId}"
-                    is TimelineRow.PhotoRow -> "photo-row-${row.dayId}-${row.photos.firstOrNull()?.fileid}"
+                    is TimelineRow.DayRow -> "day-row-${row.dayId}-${row.photos.firstOrNull()?.fileid}"
                 }
             },
             focusedItemId = focusedItemId,
@@ -207,17 +197,12 @@ private fun TimelineContent(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) { row, itemFocusRequester, isFocused ->
             when (row) {
-                is TimelineRow.HeaderRow -> {
-                    DayHeader(
-                        dayName = row.dayName,
-                        count = row.count,
-                    )
-                }
-
-                is TimelineRow.PhotoRow -> {
+                is TimelineRow.DayRow -> {
                     val focusedPhotoId = focusedItemId?.split("-")?.lastOrNull()?.toIntOrNull()
-                    PhotoRowContent(
+                    DayRowContent(
                         photos = row.photos,
+                        dayName = row.dayName,
+                        photoCount = row.photoCount,
                         memoriesRepository = memoriesRepository,
                         focusedPhotoId = focusedPhotoId,
                         onSelectPhoto = onSelectPhoto,
@@ -237,38 +222,10 @@ private fun TimelineContent(
 }
 
 @Composable
-private fun DayHeader(
-    dayName: String,
-    count: Int,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(40.dp)
-            .padding(start = 8.dp, top = 8.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = dayName,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "($count)",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 14.sp
-        )
-    }
-}
-
-@Composable
-private fun PhotoRowContent(
+private fun DayRowContent(
     photos: List<MemoriesPhoto>,
+    dayName: String?,
+    photoCount: Int,
     memoriesRepository: MemoriesRepository,
     focusedPhotoId: Int?,
     onSelectPhoto: (MemoriesPhoto) -> Unit,
@@ -276,27 +233,53 @@ private fun PhotoRowContent(
     isRowFocused: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(120.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        photos.forEachIndexed { index, photo ->
-            val isFirstPhoto = index == 0
-            PhotoCard(
-                photo = photo,
-                memoriesRepository = memoriesRepository,
-                isFocused = focusedPhotoId == photo.fileid,
-                onSelect = { onSelectPhoto(photo) },
-                focusRequester = if (isFirstPhoto) rowFocusRequester else remember { FocusRequester() },
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (dayName != null) {
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-            )
+                    .fillMaxWidth()
+                    .height(40.dp)
+                    .padding(start = 8.dp, top = 8.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = dayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "($photoCount)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+            }
         }
 
-        repeat(maxOf(0, 5 - photos.size)) {
-            Spacer(modifier = Modifier.weight(1f))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            photos.forEachIndexed { index, photo ->
+                val isFirstPhoto = index == 0
+                PhotoCard(
+                    photo = photo,
+                    memoriesRepository = memoriesRepository,
+                    isFocused = focusedPhotoId == photo.fileid,
+                    onSelect = { onSelectPhoto(photo) },
+                    focusRequester = if (isFirstPhoto) rowFocusRequester else remember { FocusRequester() },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            repeat(maxOf(0, 5 - photos.size)) {
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
     }
 }
