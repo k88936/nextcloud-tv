@@ -65,6 +65,7 @@ object ScreensConfig {
     val items = listOf(Files, Memories, Settings)
     val startDestination = Files
 }
+
 @Composable
 fun AppNavigation(
     modifier: Modifier = Modifier
@@ -91,8 +92,8 @@ fun AppNavigation(
                         onClick = {
                             selectedIndex = index
                             innerNavController.navigate(ScreensConfig.items[index].route) {
-                                popUpTo(ScreensConfig.startDestination.route) {
-                                    saveState = true
+                                popUpTo(0) {
+                                    inclusive = true
                                 }
                                 launchSingleTop = true
                                 restoreState = true
