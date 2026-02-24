@@ -1,7 +1,13 @@
 # NextcloudTV
-this is a nextcloud client(readonly) implement for android tv.
+
+this is another Nextcloud client. Implemented for native android TV.
 
 ## Feature
-* [] file browse
-* [] online photo,video playing
-* [] nextcloud app (album, recognize) support via plugin
+
+* [x] online photo
+* [ ] video playing
+
+### Apps support
+
+* [x] Files
+* [x] Memories

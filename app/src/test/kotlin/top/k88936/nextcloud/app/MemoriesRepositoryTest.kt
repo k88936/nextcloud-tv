@@ -3,11 +3,13 @@ package top.k88936.nextcloud.app
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
 import io.ktor.client.plugins.cookies.cookies
+import kotlinx.coroutines.runBlocking
 import top.k88936.nextcloud.mock.MockCredentialStore
 import top.k88936.nextcloud_tv.data.model.DaysFilterType
 import top.k88936.nextcloud_tv.data.model.Photo
 import top.k88936.nextcloud_tv.data.model.convertFlags
 import top.k88936.nextcloud_tv.data.repository.ClientRepository
+import top.k88936.nextcloud_tv.data.repository.LoginResult
 import top.k88936.nextcloud_tv.data.repository.MemoriesRepository
 
 class MemoriesRepositoryTest : ShouldSpec() {
@@ -16,6 +18,13 @@ class MemoriesRepositoryTest : ShouldSpec() {
     private val repository = MemoriesRepository(clientRepository)
 
     init {
+        runBlocking {
+            val result = clientRepository.login()
+            if (result is LoginResult.Error) {
+                println("Login failed: ${result.message}")
+            }
+        }
+
         should("getDays returns list of days") {
             println(
                 clientRepository.getClient()?.cookies(credentialStore.getCredentials().serverURL)

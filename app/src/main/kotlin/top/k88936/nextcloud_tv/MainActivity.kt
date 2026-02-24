@@ -4,12 +4,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,8 +52,16 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val clientRepository: ClientRepository = koinInject()
                 val authState by clientRepository.authState.collectAsState()
+                var isInitializing by remember { mutableStateOf(true) }
 
-                LaunchedEffect(authState) {
+                LaunchedEffect(Unit) {
+                    clientRepository.login()
+                    isInitializing = false
+                }
+
+                LaunchedEffect(authState, isInitializing) {
+                    if (isInitializing) return@LaunchedEffect
+                    
                     when (authState) {
                         is AuthState.Authenticated -> {
                             if (navController.currentDestination?.route == "auth") {
@@ -63,39 +78,50 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
-
-                        is AuthState.Initializing -> {}
                     }
                 }
 
-                CompositionLocalProvider(LocalNavController provides navController) {
-                    NavHost(
-                        navController = navController,
-                        startDestination = "auth",
-                        modifier = Modifier.fillMaxSize()
+                if (isInitializing) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        composable("auth") {
-                            AuthScreen()
-                        }
-                        composable("main") {
-                            AppNavigation(
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                        composable(
-                            route = "photo_viewer?url={url}&name={name}",
-                            arguments = listOf(
-                                navArgument("url") { type = NavType.StringType },
-                                navArgument("name") { type = NavType.StringType }
-                            )
-                        ) { backStackEntry ->
-                            val url = backStackEntry.arguments?.getString("url") ?: ""
-                            val name = backStackEntry.arguments?.getString("name") ?: ""
-                            PhotoViewerScreen(
-                                url = url,
-                                name = name,
-                                onBack = { navController.popBackStack() }
-                            )
+                        Image(
+                            painter = painterResource(id = R.drawable.splash),
+                            contentDescription = "Splash",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                } else {
+                    CompositionLocalProvider(LocalNavController provides navController) {
+                        NavHost(
+                            navController = navController,
+                            startDestination = "main",
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            composable("auth") {
+                                AuthScreen()
+                            }
+                            composable("main") {
+                                AppNavigation(
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            composable(
+                                route = "photo_viewer?url={url}&name={name}",
+                                arguments = listOf(
+                                    navArgument("url") { type = NavType.StringType },
+                                    navArgument("name") { type = NavType.StringType }
+                                )
+                            ) { backStackEntry ->
+                                val url = backStackEntry.arguments?.getString("url") ?: ""
+                                val name = backStackEntry.arguments?.getString("name") ?: ""
+                                PhotoViewerScreen(
+                                    url = url,
+                                    name = name,
+                                    onBack = { navController.popBackStack() }
+                                )
+                            }
                         }
                     }
                 }

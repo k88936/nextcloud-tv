@@ -2,9 +2,11 @@ package top.k88936.nextcloud.app
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
+import kotlinx.coroutines.runBlocking
 import top.k88936.nextcloud.mock.MockCredentialStore
 import top.k88936.nextcloud_tv.data.repository.ClientRepository
 import top.k88936.nextcloud_tv.data.repository.FilesRepository
+import top.k88936.nextcloud_tv.data.repository.LoginResult
 
 class FilesRepositoryTest : ShouldSpec() {
     private val credentialStore = MockCredentialStore()
@@ -12,6 +14,13 @@ class FilesRepositoryTest : ShouldSpec() {
     private val repository = FilesRepository(clientRepository)
 
     init {
+        runBlocking {
+            val result = clientRepository.login()
+            if (result is LoginResult.Error) {
+                println("Login failed: ${result.message}")
+            }
+        }
+
         should("listFiles returns files from root directory") {
             val result = repository.listFiles("/")
             result.isSuccess shouldBe true
