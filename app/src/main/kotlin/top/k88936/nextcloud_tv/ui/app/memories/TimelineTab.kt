@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -91,7 +90,7 @@ fun TimelineTab(
     }
 
     fun handleSelectPhoto(photo: MemoriesPhoto) {
-        val imageUrl = viewModel.memoriesRepository.getFullImageUrl(photo.fileid) ?: return
+        val imageUrl = viewModel.memoriesRepository.getFullImageUrl(photo) ?: return
         val encodedUrl = URLEncoder.encode(imageUrl, StandardCharsets.UTF_8.toString())
         val encodedName =
             URLEncoder.encode(photo.basename ?: "Photo", StandardCharsets.UTF_8.toString())
@@ -101,8 +100,6 @@ fun TimelineTab(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .focusable()
-            .focusRequester(focusRequester)
     ) {
         when {
             state.error != null -> {
@@ -123,10 +120,12 @@ fun TimelineTab(
                     isLoadingMore = state.isLoadingMore,
                     focusedItemId = viewModel.focusedItemId,
                     onFocusChanged = { row, isFocused ->
-                        if (isFocused && row is TimelineRow.PhotoRow) {
-                            row.photos.firstOrNull()?.fileid?.let {
-                                viewModel.updateFocusedItemId(it)
+                        if (isFocused) {
+                            val key = when (row) {
+                                is TimelineRow.HeaderRow -> "header-${row.dayId}"
+                                is TimelineRow.PhotoRow -> "photo-row-${row.dayId}-${row.photos.firstOrNull()?.fileid}"
                             }
+                            viewModel.updateFocusedItemId(key)
                         }
                     },
                     onSelectPhoto = { photo -> handleSelectPhoto(photo) }
@@ -148,7 +147,7 @@ private fun TimelineContent(
     focusRequester: FocusRequester,
     onLoadMore: () -> Unit,
     isLoadingMore: Boolean,
-    focusedItemId: Any?,
+    focusedItemId: String?,
     onFocusChanged: (TimelineRow, Boolean) -> Unit,
     onSelectPhoto: (MemoriesPhoto) -> Unit
 ) {
@@ -217,16 +216,19 @@ private fun TimelineContent(
                 is TimelineRow.HeaderRow -> {
                     DayHeader(
                         dayName = row.dayName,
-                        count = row.count
+                        count = row.count,
                     )
                 }
 
                 is TimelineRow.PhotoRow -> {
+                    val focusedPhotoId = focusedItemId?.split("-")?.lastOrNull()?.toIntOrNull()
                     PhotoRowContent(
                         photos = row.photos,
                         memoriesRepository = memoriesRepository,
-                        focusedPhotoId = focusedItemId as? Int,
-                        onSelectPhoto = onSelectPhoto
+                        focusedPhotoId = focusedPhotoId,
+                        onSelectPhoto = onSelectPhoto,
+                        rowFocusRequester = itemFocusRequester,
+                        isRowFocused = isFocused,
                     )
                 }
             }
@@ -280,20 +282,25 @@ private fun PhotoRowContent(
     photos: List<MemoriesPhoto>,
     memoriesRepository: MemoriesRepository,
     focusedPhotoId: Int?,
-    onSelectPhoto: (MemoriesPhoto) -> Unit
+    onSelectPhoto: (MemoriesPhoto) -> Unit,
+    rowFocusRequester: FocusRequester,
+    isRowFocused: Boolean,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(180.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        photos.forEach { photo ->
+        photos.forEachIndexed { index, photo ->
+            val isFirstPhoto = index == 0
             PhotoCard(
                 photo = photo,
                 memoriesRepository = memoriesRepository,
                 isFocused = focusedPhotoId == photo.fileid,
                 onSelect = { onSelectPhoto(photo) },
+                focusRequester = if (isFirstPhoto) rowFocusRequester else remember { FocusRequester() },
                 modifier = Modifier
                     .weight(1f)
                     .aspectRatio(1f)
@@ -312,10 +319,10 @@ private fun PhotoCard(
     memoriesRepository: MemoriesRepository,
     isFocused: Boolean,
     onSelect: () -> Unit,
+    focusRequester: FocusRequester,
     modifier: Modifier = Modifier
 ) {
     var previewBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(photo.fileid) {
         withContext(Dispatchers.IO) {

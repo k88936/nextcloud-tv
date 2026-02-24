@@ -32,7 +32,7 @@ class TimelineViewModel(
     private val _state = MutableStateFlow(TimelineState())
     val state: StateFlow<TimelineState> = _state.asStateFlow()
 
-    var focusedItemId by mutableStateOf<Int?>(null)
+    var focusedItemId by mutableStateOf<String?>(null)
         private set
 
     private val loadedDays = mutableSetOf<Int>()
@@ -143,7 +143,7 @@ class TimelineViewModel(
         }
     }
 
-    fun updateFocusedItemId(id: Int?) {
+    fun updateFocusedItemId(id: String?) {
         focusedItemId = id
     }
 
