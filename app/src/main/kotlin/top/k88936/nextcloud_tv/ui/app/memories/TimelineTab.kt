@@ -1,9 +1,6 @@
 package top.k88936.nextcloud_tv.ui.app.memories
 
 import android.graphics.BitmapFactory
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,8 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -234,11 +228,6 @@ private fun TimelineContent(
             }
         }
 
-        TopOverlay(
-            text = "",
-            show = false
-        )
-
         LaunchedEffect(timelineRows.size) {
             if (!isLoadingMore && timelineRows.isNotEmpty()) {
                 onLoadMore()
@@ -290,7 +279,7 @@ private fun PhotoRowContent(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(180.dp),
+            .height(120.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         photos.forEachIndexed { index, photo ->
@@ -303,7 +292,6 @@ private fun PhotoRowContent(
                 focusRequester = if (isFirstPhoto) rowFocusRequester else remember { FocusRequester() },
                 modifier = Modifier
                     .weight(1f)
-                    .aspectRatio(1f)
             )
         }
 
@@ -388,47 +376,6 @@ private fun PhotoCard(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun TopOverlay(
-    text: String,
-    show: Boolean,
-    modifier: Modifier = Modifier
-) {
-    AnimatedVisibility(
-        visible = show && text.isNotEmpty(),
-        enter = fadeIn(),
-        exit = fadeOut(),
-        modifier = modifier
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.5f),
-                            Color.Black.copy(alpha = 0.3f),
-                            Color.Transparent
-                        )
-                    )
-                )
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }
