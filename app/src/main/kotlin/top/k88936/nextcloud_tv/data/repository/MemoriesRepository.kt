@@ -16,11 +16,10 @@ import top.k88936.nextcloud_tv.data.model.Day
 import top.k88936.nextcloud_tv.data.model.ImageInfo
 import top.k88936.nextcloud_tv.data.model.Photo
 import top.k88936.nextcloud_tv.data.model.convertFlags
-import top.k88936.nextcloud_tv.data.network.NextcloudClient
 import java.util.TimeZone
 
 class MemoriesRepository(
-    private val nextcloudClient: NextcloudClient
+    private val clientRepository: ClientRepository
 ) {
     private companion object {
         private const val TAG = "MemoriesRepository"
@@ -29,9 +28,9 @@ class MemoriesRepository(
 
     suspend fun getDays(filters: Map<String, String> = emptyMap()): Result<List<Day>> {
         Log.d(TAG, "getDays: filters=$filters")
-        val client = nextcloudClient.getClient()
+        val client = clientRepository.getClient()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
-        val credentials = nextcloudClient.getCredentials()
+        val credentials = clientRepository.getCredentials()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
 
         return runCatching {
@@ -57,9 +56,9 @@ class MemoriesRepository(
         filters: Map<String, String> = emptyMap()
     ): Result<List<Photo>> {
         Log.d(TAG, "getDay: dayIds=$dayIds, filters=$filters")
-        val client = nextcloudClient.getClient()
+        val client = clientRepository.getClient()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
-        val credentials = nextcloudClient.getCredentials()
+        val credentials = clientRepository.getCredentials()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
 
         return runCatching {
@@ -82,9 +81,9 @@ class MemoriesRepository(
 
     suspend fun getPreview(fileid: Int, etag: String? = null): Result<ByteArray> {
         Log.d(TAG, "getPreview: fileid=$fileid, etag=$etag")
-        val client = nextcloudClient.getClient()
+        val client = clientRepository.getClient()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
-        val credentials = nextcloudClient.getCredentials()
+        val credentials = clientRepository.getCredentials()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
 
         return runCatching {
@@ -105,9 +104,9 @@ class MemoriesRepository(
 
     suspend fun getMultiPreview(fileids: List<Int>): Result<ByteArray> {
         Log.d(TAG, "getMultiPreview: fileids=${fileids.size}")
-        val client = nextcloudClient.getClient()
+        val client = clientRepository.getClient()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
-        val credentials = nextcloudClient.getCredentials()
+        val credentials = clientRepository.getCredentials()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
 
         return runCatching {
@@ -133,9 +132,9 @@ class MemoriesRepository(
 
     suspend fun getImageInfo(fileid: Int): Result<ImageInfo> {
         Log.d(TAG, "getImageInfo: fileid=$fileid")
-        val client = nextcloudClient.getClient()
+        val client = clientRepository.getClient()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
-        val credentials = nextcloudClient.getCredentials()
+        val credentials = clientRepository.getCredentials()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
 
         return runCatching {
@@ -153,7 +152,7 @@ class MemoriesRepository(
         }
     }
 
-    fun buildDaysUrl(
+    private fun buildDaysUrl(
         credentials: Credentials,
         filters: Map<String, String> = emptyMap()
     ): String {
@@ -165,7 +164,7 @@ class MemoriesRepository(
         }.buildString()
     }
 
-    fun buildDayUrl(
+    private fun buildDayUrl(
         credentials: Credentials,
         dayIds: List<Int>,
         filters: Map<String, String> = emptyMap()
@@ -178,7 +177,7 @@ class MemoriesRepository(
         }.buildString()
     }
 
-    fun buildPreviewUrl(
+    private fun buildPreviewUrl(
         credentials: Credentials,
         fileid: Int,
         etag: String? = null
@@ -189,7 +188,7 @@ class MemoriesRepository(
         }.buildString()
     }
 
-    fun buildFullImageUrl(
+    private fun buildFullImageUrl(
         credentials: Credentials,
         fileid: Int
     ): String {
@@ -199,15 +198,15 @@ class MemoriesRepository(
     }
 
     fun getFullImageUrl(fileid: Int): String? {
-        val credentials = nextcloudClient.getCredentials() ?: return null
+        val credentials = clientRepository.getCredentials() ?: return null
         return buildFullImageUrl(credentials, fileid)
     }
 
     suspend fun getOnThisDay(): Result<List<Photo>> {
         Log.d(TAG, "getOnThisDay: calculating dayIds")
-        val client = nextcloudClient.getClient()
+        val client = clientRepository.getClient()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
-        val credentials = nextcloudClient.getCredentials()
+        val credentials = clientRepository.getCredentials()
             ?: return Result.failure(IllegalStateException("Not authenticated"))
 
         val dayIds = calculateOnThisDayIds()

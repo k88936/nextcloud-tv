@@ -29,12 +29,12 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.compose.koinInject
-import top.k88936.nextcloud_tv.data.repository.IAuthRepository
+import top.k88936.nextcloud_tv.data.repository.ClientRepository
 
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    authRepository: IAuthRepository = koinInject()
+    clientRepository: ClientRepository = koinInject()
 ) {
     Column(
         modifier = modifier
@@ -49,7 +49,7 @@ fun SettingsScreen(
             style = MaterialTheme.typography.headlineMedium
         )
 
-        authRepository.getCredentials()?.let { credentials ->
+        clientRepository.getCredentials()?.let { credentials ->
 
             SettingsSection(
                 title = "About",
@@ -89,7 +89,7 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Button(onClick = { authRepository.logout() }) {
+                Button(onClick = { clientRepository.logout() }) {
                     Icon(
                         imageVector = Icons.Filled.Logout,
                         contentDescription = null

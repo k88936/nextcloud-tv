@@ -5,7 +5,6 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.http.URLBuilder
 import io.ktor.http.set
-import top.k88936.nextcloud_tv.data.network.NextcloudClient
 import top.k88936.webdav.DavAPI
 import top.k88936.webdav.FileMetadata
 
@@ -18,7 +17,7 @@ data class FilesState(
 )
 
 class FilesRepository(
-    private val nextcloudClient: NextcloudClient
+    private val clientRepository: ClientRepository
 ) {
     private companion object {
         private const val TAG = "FilesRepository"
@@ -26,12 +25,12 @@ class FilesRepository(
 
     suspend fun listFiles(path: String = "/"): Result<List<FileMetadata>> {
         Log.d(TAG, "listFiles: path=$path")
-        val client = nextcloudClient.getClient()
+        val client = clientRepository.getClient()
             ?: run {
                 Log.w(TAG, "listFiles: not authenticated (no client)")
                 return Result.failure(IllegalStateException("Not authenticated"))
             }
-        val credentials = nextcloudClient.getCredentials()
+        val credentials = clientRepository.getCredentials()
             ?: run {
                 Log.w(TAG, "listFiles: not authenticated (no credentials)")
                 return Result.failure(IllegalStateException("Not authenticated"))
@@ -62,12 +61,12 @@ class FilesRepository(
         mode: String = "fill"
     ): Result<ByteArray> {
         Log.d(TAG, "getPreview: file=$file, x=$x, y=$y, mode=$mode")
-        val client = nextcloudClient.getClient()
+        val client = clientRepository.getClient()
             ?: run {
                 Log.w(TAG, "getPreview: not authenticated (no client)")
                 return Result.failure(IllegalStateException("Not authenticated"))
             }
-        val credentials = nextcloudClient.getCredentials()
+        val credentials = clientRepository.getCredentials()
             ?: run {
                 Log.w(TAG, "getPreview: not authenticated (no credentials)")
                 return Result.failure(IllegalStateException("Not authenticated"))
@@ -94,7 +93,7 @@ class FilesRepository(
 
     suspend fun getFileContent(file: FileMetadata): Result<ByteArray> {
         Log.d(TAG, "getFileContent: file=${file.path}, url=${file.url}")
-        val client = nextcloudClient.getClient()
+        val client = clientRepository.getClient()
             ?: run {
                 Log.w(TAG, "getFileContent: not authenticated (no client)")
                 return Result.failure(IllegalStateException("Not authenticated"))
@@ -111,7 +110,7 @@ class FilesRepository(
 
     suspend fun getFileContentByUrl(url: String): Result<ByteArray> {
         Log.d(TAG, "getFileContentByUrl: url=$url")
-        val client = nextcloudClient.getClient()
+        val client = clientRepository.getClient()
             ?: run {
                 Log.w(TAG, "getFileContentByUrl: not authenticated (no client)")
                 return Result.failure(IllegalStateException("Not authenticated"))

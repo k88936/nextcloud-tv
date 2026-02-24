@@ -2,17 +2,14 @@ package top.k88936.nextcloud.app
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
-import top.k88936.nextcloud.mock.MockAuthRepository
-import top.k88936.nextcloud.mock.MockCredential
-import top.k88936.nextcloud_tv.data.network.NextcloudClient
+import top.k88936.nextcloud.mock.MockCredentialStore
+import top.k88936.nextcloud_tv.data.repository.ClientRepository
 import top.k88936.nextcloud_tv.data.repository.FilesRepository
 
 class FilesRepositoryTest : ShouldSpec() {
-    private val credentials = MockCredential
-
-    private val authRepository = MockAuthRepository(credentials)
-    private val nextcloudClient = NextcloudClient(authRepository)
-    private val repository = FilesRepository(nextcloudClient)
+    private val credentialStore = MockCredentialStore()
+    private val clientRepository = ClientRepository(credentialStore)
+    private val repository = FilesRepository(clientRepository)
 
     init {
         should("listFiles returns files from root directory") {

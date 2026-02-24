@@ -3,25 +3,23 @@ package top.k88936.nextcloud.app
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.ShouldSpec
 import io.ktor.client.plugins.cookies.cookies
-import top.k88936.nextcloud.mock.MockAuthRepository
-import top.k88936.nextcloud.mock.MockCredential
+import top.k88936.nextcloud.mock.MockCredentialStore
 import top.k88936.nextcloud_tv.data.model.DaysFilterType
 import top.k88936.nextcloud_tv.data.model.Photo
 import top.k88936.nextcloud_tv.data.model.convertFlags
-import top.k88936.nextcloud_tv.data.network.NextcloudClient
+import top.k88936.nextcloud_tv.data.repository.ClientRepository
 import top.k88936.nextcloud_tv.data.repository.MemoriesRepository
 
 class MemoriesRepositoryTest : ShouldSpec() {
-    private val credentials = MockCredential
-
-    private val authRepository =
-        MockAuthRepository(credentials)
-    private val nextcloudClient = NextcloudClient(authRepository)
-    private val repository = MemoriesRepository(nextcloudClient)
+    private val credentialStore = MockCredentialStore()
+    private val clientRepository = ClientRepository(credentialStore)
+    private val repository = MemoriesRepository(clientRepository)
 
     init {
         should("getDays returns list of days") {
-            println(nextcloudClient.getClient()?.cookies(credentials.serverURL))
+            println(
+                clientRepository.getClient()?.cookies(credentialStore.getCredentials().serverURL)
+            )
             val result = repository.getDays()
             result.isSuccess shouldBe true
             val days = result.getOrThrow()
@@ -136,32 +134,6 @@ class MemoriesRepositoryTest : ShouldSpec() {
             } else {
                 println("No days found, skipping image info test")
             }
-        }
-
-        should("buildDaysUrl creates correct URL") {
-            val url = repository.buildDaysUrl(credentials)
-            println("Days URL: $url")
-            url.contains("/apps/memories/api/days") shouldBe true
-
-            val urlWithFilter = repository.buildDaysUrl(credentials, mapOf("fav" to "1"))
-            println("Days URL with filter: $urlWithFilter")
-            urlWithFilter.contains("fav=1") shouldBe true
-        }
-
-        should("buildDayUrl creates correct URL") {
-            val url = repository.buildDayUrl(credentials, listOf(12345, 12346))
-            println("Day URL: $url")
-            url.contains("/apps/memories/api/days/12345,12346") shouldBe true
-        }
-
-        should("buildPreviewUrl creates correct URL") {
-            val url = repository.buildPreviewUrl(credentials, 12345)
-            println("Preview URL: $url")
-            url.contains("/apps/memories/api/image/preview/12345") shouldBe true
-
-            val urlWithEtag = repository.buildPreviewUrl(credentials, 12345, "abc123")
-            println("Preview URL with etag: $urlWithEtag")
-            urlWithEtag.contains("etag=abc123") shouldBe true
         }
 
         should("Photo.convertFlags sets correct flags") {

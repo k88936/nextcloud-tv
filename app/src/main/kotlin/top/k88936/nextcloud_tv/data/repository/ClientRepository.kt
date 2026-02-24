@@ -1,4 +1,4 @@
-package top.k88936.nextcloud_tv.data.network
+package top.k88936.nextcloud_tv.data.repository
 
 import android.util.Log
 import io.ktor.client.HttpClient
@@ -21,23 +21,33 @@ import io.ktor.serialization.kotlinx.xml.xml
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.serialization.XML
 import top.k88936.nextcloud_tv.data.local.Credentials
-import top.k88936.nextcloud_tv.data.repository.AuthState
-import top.k88936.nextcloud_tv.data.repository.IAuthRepository
+import top.k88936.nextcloud_tv.data.local.ICredentialStore
 
-class NextcloudClient(
-    val authRepository: IAuthRepository
+sealed class AuthState {
+    data object Initializing : AuthState()
+    data object Unauthenticated : AuthState()
+    data class Authenticated(val credentials: Credentials) : AuthState()
+}
+
+class ClientRepository(
+    private val credentialStore: ICredentialStore
 ) {
     private companion object {
-        private const val TAG = "AuthenticatedHttpClient"
+        private const val TAG = "ClientRepository"
         private const val OCS_API_REQUEST_HEADER = "OCS-APIRequest"
     }
+
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Initializing)
+    val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     private var httpClient: HttpClient? = null
     private var currentCredentials: Credentials? = null
@@ -45,23 +55,34 @@ class NextcloudClient(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     init {
-        val currentState = authRepository.authState.value
+        checkExistingAuth()
+    }
+
+    private fun checkExistingAuth() {
+        val hasCredentials = credentialStore.hasCredentials()
+        _authState.value = if (hasCredentials) {
+            AuthState.Authenticated(requireNotNull(credentialStore.getCredentials()))
+        } else {
+            AuthState.Unauthenticated
+        }
+
+        val currentState = _authState.value
         if (currentState is AuthState.Authenticated) {
             Log.d(TAG, "Initial auth state is Authenticated, initializing client synchronously")
-            initialize(currentState.credentials)
+            initializeHttpClient(currentState.credentials)
         }
 
         scope.launch {
-            authRepository.authState.collectLatest { state ->
+            authState.collect { state ->
                 when (state) {
                     is AuthState.Authenticated -> {
                         Log.d(TAG, "Auth state changed to Authenticated, initializing client")
-                        initialize(state.credentials)
+                        initializeHttpClient(state.credentials)
                     }
 
                     is AuthState.Unauthenticated -> {
                         Log.d(TAG, "Auth state changed to Unauthenticated, clearing client")
-                        clear()
+                        clearHttpClient()
                     }
 
                     is AuthState.Initializing -> {
@@ -72,7 +93,23 @@ class NextcloudClient(
         }
     }
 
-    private fun initialize(credentials: Credentials) {
+    fun saveCredentials(credentials: Credentials) {
+        credentialStore.saveCredentials(credentials)
+        _authState.value = AuthState.Authenticated(credentials)
+    }
+
+    fun logout() {
+        credentialStore.clearCredentials()
+        _authState.value = AuthState.Unauthenticated
+    }
+
+    fun getCredentials(): Credentials? {
+        return credentialStore.getCredentials()
+    }
+
+    fun getClient(): HttpClient? = httpClient
+
+    private fun initializeHttpClient(credentials: Credentials) {
         if (currentCredentials == credentials && httpClient != null && cookieInitialized) {
             Log.d(TAG, "Client already initialized with same credentials, skipping")
             return
@@ -152,10 +189,7 @@ class NextcloudClient(
         }
     }
 
-    fun getClient(): HttpClient? = httpClient
-    fun getCredentials(): Credentials? = currentCredentials
-
-    private fun clear() {
+    private fun clearHttpClient() {
         Log.d(TAG, "Clearing HTTP client")
         httpClient?.close()
         httpClient = null

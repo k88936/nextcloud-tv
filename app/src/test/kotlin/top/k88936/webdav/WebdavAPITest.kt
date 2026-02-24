@@ -13,7 +13,7 @@ import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.serialization.XML
 import top.k88936.nextcloud.mock.MockCredential
 
-class WebdavAPI : ShouldSpec() {
+class WebdavAPITest : ShouldSpec() {
     private val client = HttpClient {
         install(Auth) {
             basic {

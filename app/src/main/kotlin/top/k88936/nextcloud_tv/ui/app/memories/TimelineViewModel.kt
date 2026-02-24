@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 import top.k88936.nextcloud_tv.data.model.Day
 import top.k88936.nextcloud_tv.data.model.Photo
 import top.k88936.nextcloud_tv.data.repository.AuthState
-import top.k88936.nextcloud_tv.data.repository.IAuthRepository
+import top.k88936.nextcloud_tv.data.repository.ClientRepository
 import top.k88936.nextcloud_tv.data.repository.MemoriesRepository
 
 data class TimelineState(
@@ -25,7 +25,7 @@ data class TimelineState(
 )
 
 class TimelineViewModel(
-    private val authRepository: IAuthRepository,
+    private val clientRepository: ClientRepository,
     val memoriesRepository: MemoriesRepository
 ) : ViewModel() {
 
@@ -42,7 +42,7 @@ class TimelineViewModel(
     }
 
     private fun initializeAndLoadTimeline() {
-        val authState = authRepository.authState.value
+        val authState = clientRepository.authState.value
         if (authState is AuthState.Authenticated) {
             loadDays()
         }

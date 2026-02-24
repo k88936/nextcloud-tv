@@ -10,13 +10,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import top.k88936.nextcloud_tv.data.repository.AuthState
+import top.k88936.nextcloud_tv.data.repository.ClientRepository
 import top.k88936.nextcloud_tv.data.repository.FilesRepository
 import top.k88936.nextcloud_tv.data.repository.FilesState
-import top.k88936.nextcloud_tv.data.repository.IAuthRepository
 import top.k88936.webdav.FileMetadata
 
 class FilesViewModel(
-    private val authRepository: IAuthRepository,
+    private val clientRepository: ClientRepository,
     val filesRepository: FilesRepository
 ) : ViewModel() {
 
@@ -31,7 +31,7 @@ class FilesViewModel(
     }
 
     private fun initializeAndLoadFiles() {
-        val authState = authRepository.authState.value
+        val authState = clientRepository.authState.value
         if (authState is AuthState.Authenticated) {
             loadFiles("/")
         }

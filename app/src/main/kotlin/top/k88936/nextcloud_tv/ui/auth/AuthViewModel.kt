@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import top.k88936.nextcloud_tv.data.local.Credentials
-import top.k88936.nextcloud_tv.data.repository.IAuthRepository
+import top.k88936.nextcloud_tv.data.repository.ClientRepository
 
 
 data class AuthState(
@@ -35,7 +35,7 @@ data class AuthState(
 )
 
 class AuthViewModel(
-    private val authRepository: IAuthRepository
+    private val clientRepository: ClientRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(AuthState())
     val state: StateFlow<AuthState> = _state.asStateFlow()
@@ -125,7 +125,7 @@ class AuthViewModel(
                         loginName = username,
                         appPassword = password
                     )
-                    authRepository.saveCredentials(credentials)
+                    clientRepository.saveCredentials(credentials)
                     _state.value = _state.value.copy(authSuccess = true, isLoading = false)
                 } else {
                     Log.w(TAG, "Login failed - nc_token not found in cookies")

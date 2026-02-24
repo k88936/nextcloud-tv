@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import top.k88936.nextcloud_tv.data.model.Photo
-import top.k88936.nextcloud_tv.data.repository.IAuthRepository
+import top.k88936.nextcloud_tv.data.repository.ClientRepository
 import top.k88936.nextcloud_tv.data.repository.MemoriesRepository
 import java.util.Calendar
 
@@ -25,7 +25,7 @@ data class OnThisDayState(
 )
 
 class OnThisDayViewModel(
-    private val authRepository: IAuthRepository,
+    private val clientRepository: ClientRepository,
     val memoriesRepository: MemoriesRepository
 ) : ViewModel() {
 
