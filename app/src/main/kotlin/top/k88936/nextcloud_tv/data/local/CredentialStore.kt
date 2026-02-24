@@ -6,9 +6,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
 data class Credentials(
-    val serverURL: String,
-    val loginName: String,
-    val appPassword: String
+    val serverURL: String, val loginName: String, val appPassword: String
 )
 
 interface ICredentialStore {
@@ -20,9 +18,8 @@ interface ICredentialStore {
 
 class CredentialStore(context: Context) : ICredentialStore {
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val masterKey =
+        MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
 
     private val sharedPreferences = EncryptedSharedPreferences.create(
         context,
@@ -34,9 +31,10 @@ class CredentialStore(context: Context) : ICredentialStore {
 
     override fun saveCredentials(credentials: Credentials) {
         sharedPreferences.edit {
-            putString(KEY_SERVER_URL, credentials.serverURL)
-                .putString(KEY_LOGIN_NAME, credentials.loginName)
-                .putString(KEY_APP_PASSWORD, credentials.appPassword)
+            putString(KEY_SERVER_URL, credentials.serverURL).putString(
+                KEY_LOGIN_NAME,
+                credentials.loginName
+            ).putString(KEY_APP_PASSWORD, credentials.appPassword)
         }
     }
 
@@ -48,17 +46,17 @@ class CredentialStore(context: Context) : ICredentialStore {
     }
 
     override fun hasCredentials(): Boolean {
-        return sharedPreferences.contains(KEY_SERVER_URL) &&
-                sharedPreferences.contains(KEY_LOGIN_NAME) &&
-                sharedPreferences.contains(KEY_APP_PASSWORD)
+        return sharedPreferences.contains(KEY_SERVER_URL)
+                && sharedPreferences.contains(KEY_LOGIN_NAME)
+                && sharedPreferences.contains(KEY_APP_PASSWORD)
     }
 
     override fun clearCredentials() {
-        sharedPreferences.edit()
-            .remove(KEY_SERVER_URL)
-            .remove(KEY_LOGIN_NAME)
-            .remove(KEY_APP_PASSWORD)
-            .apply()
+        sharedPreferences.edit {
+            remove(KEY_SERVER_URL)
+            remove(KEY_LOGIN_NAME)
+            remove(KEY_APP_PASSWORD)
+        }
     }
 
     companion object {

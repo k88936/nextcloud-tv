@@ -1,6 +1,9 @@
 package top.k88936.nextcloud_tv.ui.app.memories
 
 import android.graphics.BitmapFactory
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -8,13 +11,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Photos
 import androidx.compose.runtime.Composable
@@ -28,10 +33,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
@@ -40,11 +50,30 @@ import androidx.tv.material3.Text
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.k88936.nextcloud_tv.data.repository.MemoriesRepository
-import top.k88936.nextcloud_tv.ui.components.FocusMaintainedLazyVerticalGrid
+import top.k88936.nextcloud_tv.navigation.LocalNavController
+import top.k88936.nextcloud_tv.ui.components.FocusMaintainedLazyColumn
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import top.k88936.nextcloud_tv.data.model.Day as MemoriesDay
 import top.k88936.nextcloud_tv.data.model.Photo as MemoriesPhoto
+
+sealed class TimelineRow {
+    data class HeaderRow(
+        val dayId: Int,
+        val dayName: String,
+        val count: Int
+    ) : TimelineRow()
+
+    data class PhotoRow(
+        val photos: List<MemoriesPhoto>,
+        val dayId: Int,
+        val rowHeight: Int = 200
+    ) : TimelineRow()
+}
 
 @Composable
 fun TimelineTab(
@@ -53,9 +82,20 @@ fun TimelineTab(
 ) {
     val state by viewModel.state.collectAsState()
     val focusRequester = remember { FocusRequester() }
+    val navController = LocalNavController.current
 
     LaunchedEffect(state.isLoading) {
-        focusRequester.requestFocus()
+        if (!state.isLoading) {
+            focusRequester.requestFocus()
+        }
+    }
+
+    fun handleSelectPhoto(photo: MemoriesPhoto) {
+        val imageUrl = viewModel.memoriesRepository.getFullImageUrl(photo.fileid) ?: return
+        val encodedUrl = URLEncoder.encode(imageUrl, StandardCharsets.UTF_8.toString())
+        val encodedName =
+            URLEncoder.encode(photo.basename ?: "Photo", StandardCharsets.UTF_8.toString())
+        navController.navigate("photo_viewer?url=$encodedUrl&name=$encodedName")
     }
 
     Box(
@@ -64,90 +104,204 @@ fun TimelineTab(
             .focusable()
             .focusRequester(focusRequester)
     ) {
-        val gridState = rememberLazyGridState()
-
         when {
             state.error != null -> {
-                val error = state.error
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Error",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        if (error != null) {
-                            Text(
-                                text = error,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
-                    }
-                }
+                ErrorView(error = state.error)
             }
 
-            state.allPhotos.isEmpty() && !state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No photos found",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+            state.days.isEmpty() && !state.isLoading -> {
+                EmptyView()
             }
 
-            state.allPhotos.isNotEmpty() -> {
-                FocusMaintainedLazyVerticalGrid(
-                    items = state.allPhotos,
-                    key = { it.fileid },
+            state.days.isNotEmpty() -> {
+                TimelineContent(
+                    days = state.days,
+                    photosByDay = state.photosByDay,
+                    memoriesRepository = viewModel.memoriesRepository,
+                    focusRequester = focusRequester,
+                    onLoadMore = { viewModel.loadMoreDays() },
+                    isLoadingMore = state.isLoadingMore,
                     focusedItemId = viewModel.focusedItemId,
-                    onFocusChanged = { photo, isFocused ->
-                        if (isFocused) {
-                            viewModel.updateFocusedItemId(photo.fileid)
+                    onFocusChanged = { row, isFocused ->
+                        if (isFocused && row is TimelineRow.PhotoRow) {
+                            row.photos.firstOrNull()?.fileid?.let {
+                                viewModel.updateFocusedItemId(it)
+                            }
                         }
                     },
-                    gridState = gridState,
-                    columns = GridCells.Adaptive(minSize = 160.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .focusRequester(focusRequester),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) { photo, itemFocusRequester, isFocused ->
-                    PhotoCard(
-                        photo = photo,
-                        memoriesRepository = viewModel.memoriesRepository,
-                        focusRequester = itemFocusRequester,
-                        isFocused = isFocused
+                    onSelectPhoto = { photo -> handleSelectPhoto(photo) }
+                )
+            }
+        }
+
+        if (state.isLoading) {
+            LoadingOverlay()
+        }
+    }
+}
+
+@Composable
+private fun TimelineContent(
+    days: List<MemoriesDay>,
+    photosByDay: Map<Int, List<MemoriesPhoto>>,
+    memoriesRepository: MemoriesRepository,
+    focusRequester: FocusRequester,
+    onLoadMore: () -> Unit,
+    isLoadingMore: Boolean,
+    focusedItemId: Any?,
+    onFocusChanged: (TimelineRow, Boolean) -> Unit,
+    onSelectPhoto: (MemoriesPhoto) -> Unit
+) {
+    val configuration = LocalConfiguration.current
+    val screenWidthDp = configuration.screenWidthDp.dp
+    val rowHeight = 180.dp
+    val photoWidth = 160.dp
+    val numCols = maxOf(3, (screenWidthDp / photoWidth).toInt())
+
+    val sortedDays = remember(days) {
+        days.sortedByDescending { it.dayid }
+    }
+
+    val timelineRows = remember(sortedDays, photosByDay, numCols) {
+        val rows = mutableListOf<TimelineRow>()
+
+        for (day in sortedDays) {
+            val photos = photosByDay[day.dayid] ?: continue
+            if (photos.isEmpty()) continue
+
+            rows.add(
+                TimelineRow.HeaderRow(
+                    dayId = day.dayid,
+                    dayName = getHeadRowName(day.dayid),
+                    count = photos.size
+                )
+            )
+
+            val sortedPhotos = photos.sortedByDescending { it.epoch }
+            sortedPhotos.chunked(numCols).forEach { photoChunk ->
+                rows.add(
+                    TimelineRow.PhotoRow(
+                        photos = photoChunk,
+                        dayId = day.dayid,
+                        rowHeight = rowHeight.value.toInt()
+                    )
+                )
+            }
+        }
+        rows
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        FocusMaintainedLazyColumn(
+            items = timelineRows,
+            key = { row ->
+                when (row) {
+                    is TimelineRow.HeaderRow -> "header-${row.dayId}"
+                    is TimelineRow.PhotoRow -> "photo-row-${row.dayId}-${row.photos.firstOrNull()?.fileid}"
+                }
+            },
+            focusedItemId = focusedItemId,
+            onFocusChanged = onFocusChanged,
+            modifier = Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester),
+            contentPadding = PaddingValues(
+                start = 8.dp,
+                end = 8.dp,
+                top = 56.dp,
+                bottom = 16.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) { row, itemFocusRequester, isFocused ->
+            when (row) {
+                is TimelineRow.HeaderRow -> {
+                    DayHeader(
+                        dayName = row.dayName,
+                        count = row.count
                     )
                 }
 
-                LaunchedEffect(gridState.firstVisibleItemIndex) {
-                    val totalItems = state.allPhotos.size
-                    val visibleIndex = gridState.firstVisibleItemIndex
-                    if (visibleIndex + 20 > totalItems && !state.isLoadingMore) {
-                        viewModel.loadMoreDays()
-                    }
+                is TimelineRow.PhotoRow -> {
+                    PhotoRowContent(
+                        photos = row.photos,
+                        memoriesRepository = memoriesRepository,
+                        focusedPhotoId = focusedItemId as? Int,
+                        onSelectPhoto = onSelectPhoto
+                    )
                 }
             }
         }
 
-        if (state.isLoading || state.isLoadingMore) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Loading...", style = MaterialTheme.typography.bodyLarge)
+        TopOverlay(
+            text = "",
+            show = false
+        )
+
+        LaunchedEffect(timelineRows.size) {
+            if (!isLoadingMore && timelineRows.isNotEmpty()) {
+                onLoadMore()
             }
+        }
+    }
+}
+
+@Composable
+private fun DayHeader(
+    dayName: String,
+    count: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(40.dp)
+            .padding(start = 8.dp, top = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = dayName,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "($count)",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 14.sp
+        )
+    }
+}
+
+@Composable
+private fun PhotoRowContent(
+    photos: List<MemoriesPhoto>,
+    memoriesRepository: MemoriesRepository,
+    focusedPhotoId: Int?,
+    onSelectPhoto: (MemoriesPhoto) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        photos.forEach { photo ->
+            PhotoCard(
+                photo = photo,
+                memoriesRepository = memoriesRepository,
+                isFocused = focusedPhotoId == photo.fileid,
+                onSelect = { onSelectPhoto(photo) },
+                modifier = Modifier
+                    .weight(1f)
+                    .aspectRatio(1f)
+            )
+        }
+
+        repeat(maxOf(0, 5 - photos.size)) {
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -156,10 +310,12 @@ fun TimelineTab(
 private fun PhotoCard(
     photo: MemoriesPhoto,
     memoriesRepository: MemoriesRepository,
-    focusRequester: FocusRequester,
     isFocused: Boolean,
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var previewBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(photo.fileid) {
         withContext(Dispatchers.IO) {
@@ -171,10 +327,8 @@ private fun PhotoCard(
     }
 
     Card(
-        onClick = { },
-        modifier = Modifier
-            .aspectRatio(1f)
-            .focusRequester(focusRequester),
+        onClick = onSelect,
+        modifier = modifier.focusRequester(focusRequester),
         colors = CardDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -228,6 +382,118 @@ private fun PhotoCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TopOverlay(
+    text: String,
+    show: Boolean,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = show && text.isNotEmpty(),
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.5f),
+                            Color.Black.copy(alpha = 0.3f),
+                            Color.Transparent
+                        )
+                    )
+                )
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun ErrorView(error: String?) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "Error",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.error
+            )
+            if (error != null) {
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyView() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "No photos found",
+            style = MaterialTheme.typography.bodyLarge
+        )
+    }
+}
+
+@Composable
+private fun LoadingOverlay() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Loading...", style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+private fun getHeadRowName(dayId: Int): String {
+    val date = Date(dayId.toLong() * 86400 * 1000)
+    val calendar = Calendar.getInstance()
+    val currentYear = calendar.get(Calendar.YEAR)
+
+    calendar.time = date
+    val dateYear = calendar.get(Calendar.YEAR)
+
+    val showYear = dateYear != currentYear
+
+    return try {
+        val pattern = if (showYear) {
+            "EEE, MMM d, yyyy"
+        } else {
+            "EEE, MMM d"
+        }
+        val format = SimpleDateFormat(pattern, Locale.getDefault())
+        format.format(date)
+    } catch (_: Exception) {
+        "Unknown date"
     }
 }
 

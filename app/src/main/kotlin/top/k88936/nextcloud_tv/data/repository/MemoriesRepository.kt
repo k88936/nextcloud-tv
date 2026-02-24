@@ -189,6 +189,20 @@ class MemoriesRepository(
         }.buildString()
     }
 
+    fun buildFullImageUrl(
+        credentials: Credentials,
+        fileid: Int
+    ): String {
+        return URLBuilder(credentials.serverURL).apply {
+            set(path = "$BASE_PATH/image/$fileid")
+        }.buildString()
+    }
+
+    fun getFullImageUrl(fileid: Int): String? {
+        val credentials = nextcloudClient.getCredentials() ?: return null
+        return buildFullImageUrl(credentials, fileid)
+    }
+
     suspend fun getOnThisDay(): Result<List<Photo>> {
         Log.d(TAG, "getOnThisDay: calculating dayIds")
         val client = nextcloudClient.getClient()
